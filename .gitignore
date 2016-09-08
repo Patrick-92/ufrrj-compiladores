@@ -27,3 +27,7 @@
 *.exe
 *.out
 *.app
+
+# Flex files
+lex.yy.c
+*.l
