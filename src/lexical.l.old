@@ -1,0 +1,74 @@
+%{
+#include <iostream>
+#include <string>
+#include <sstream>
+
+int lines = 0;
+%}
+
+DIGIT		[0-9]
+LOWER		[a-z]
+UPPER		[A-Z]
+LETTER		{LOWER}|{UPPER}
+LOALPHA		{LOWER}|{DIGIT}
+UPALPHA 	{UPPER}|{DIGIT}
+ALPHA		{LETTER}|{DIGIT}
+AMPERSAND	&
+
+BREAK		\r?\n
+INDENT		" "{4}|\t
+/*Alterei o regex do espaço para qualquer quantidade de espaço*/
+SPACE		[" "]{1,3}
+
+INT     	{DIGIT}+
+FLOAT   	{DIGIT}+(\.{DIGIT}*)?([eE][\-\+]?{DIGIT}+)?[fF?]
+DOUBLE		{DIGIT}+(\.{DIGIT}*)?([eE][\-\+]?{DIGIT}+)?[dD]
+LONG		{DIGIT}+[lL]
+CHAR		\'[^\'\n]\'c
+STRING		\'[^\'\n]\'|\"[^\'\n]\"
+
+ID          {ALPHA}*{LOALPHA}{ALPHA}*
+CONST       [{UPALPHA}_\-]*{UPPER}[{UPALPHA}_\-*]
+
+COMMBST	    "/*"
+COMMBFN     "*/"
+COMMB       {COMMBST}[^{COMMBFN}]*{COMMBFN}
+COMML	    "//".*\n
+
+%%
+
+{BREAK}		{std::cout << yytext;}
+{INDENT}	{std::cout << "<indent>";}
+{SPACE}		{}
+
+{INT}     	{std::cout << "<int>";}
+{FLOAT}   	{std::cout << "<float>";}
+{DOUBLE}	{std::cout << "<double>";}
+{LONG}		{std::cout << "<long>";}
+{CHAR}		{std::cout << "<char>";}
+{STRING}	{std::cout << "<string>";}
+
+[\+\-\/\*]	{std::cout << "<operator>";}
+=			{std::cout << "<assign>";}
+
+"int"       {std::cout << "<type>";}
+"float"     {std::cout << "<type>";}
+"double"    {std::cout << "<type>";}
+"long"      {std::cout << "<type>";}
+"char"      {std::cout << "<type>";}
+"string"    {std::cout << "<type>";}
+"func"      {std::cout << "<funcdef>";}
+
+{ID}        {std::cout << "<id>";}
+{CONST}     {std::cout << "<const>";}
+
+{COMMB}     {std::cout << "<commb>";}
+{COMML}	    {std::cout << "<comml>";}
+<<EOF>>		{return 0;}
+.			{std::cout << "?";}
+
+%%
+
+int main() {
+	while (yylex());
+}
