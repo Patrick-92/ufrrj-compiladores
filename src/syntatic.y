@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <fstream>
 
 #define YYSTYPE attributes
 
@@ -13,6 +14,10 @@ struct attributes {
 	string type;
 	string transl;
 };
+
+map<string, string> opMap;
+string type1, type2, op, typeRes;
+ifstream opMapFile;
 
 int tempGen = 0;
 
@@ -49,7 +54,9 @@ BLOCK		: '{' STATEMENTS '}' {
 STATEMENTS	: STATEMENT STATEMENTS {
 				$$.transl = $1.transl + "\n" + $2.transl;
 			}
-			|
+			| STATEMENT {
+				$$.transl = $1.transl + "\n";
+			}
 			;
 
 STATEMENT 	: E ';' {
@@ -59,29 +66,33 @@ STATEMENT 	: E ';' {
 E 			: E '+' E {
 				string var = getNextVar();
 				
+				$$.type = opMap[$1.type + "+" + $2.type];
 				$$.transl = $1.transl + $3.transl + 
-					"\t" + var + " = " + $1.label + " + " + $3.label + ";\n";
+					"\t" + $$.type + " " + var + " = " + $1.label + " + " + $3.label + ";\n";
 				$$.label = var;
 			}
 			| E '-' E {
 				string var = getNextVar();
 				
+				$$.type = opMap[$1.type + "-" + $2.type];
 				$$.transl = $1.transl + $3.transl + 
-					"\t" + var + " = " + $1.label + " - " + $3.label + ";\n";
+					"\t" + $$.type + " " + var + " = " + $1.label + " - " + $3.label + ";\n";
 				$$.label = var;
 			}
 			| E '*' E {
 				string var = getNextVar();
 				
+				$$.type = opMap[$1.type + "*" + $2.type];
 				$$.transl = $1.transl + $3.transl + 
-					"\t" + var + " = " + $1.label + " * " + $3.label + ";\n";
+					"\t" + $$.type + " " + var + " = " + $1.label + " * " + $3.label + ";\n";
 				$$.label = var;
 			}
 			| E '/' E {
 				string var = getNextVar();
 				
+				$$.type = opMap[$1.type + "/" + $2.type];
 				$$.transl = $1.transl + $3.transl + 
-					"\t" + var + " = " + $1.label + " / " + $3.label + ";\n";
+					"\t" + $$.type + " " + var + " = " + $1.label + " / " + $3.label + ";\n";
 				$$.label = var;
 			}
 			| TK_NUM {
@@ -99,15 +110,25 @@ E 			: E '+' E {
 
 int yyparse();
 
-int main( int argc, char* argv[] )
-{
+int main( int argc, char* argv[] ) {
+	opMapFile.open("util/opmap.dat");
+	
+	if (opMapFile.is_open()) {
+		while (opMapFile >> type1 >> op >> type2 >> typeRes) {
+	    	opMap[type1 + op + type2] = typeRes;
+		}
+		
+		opMapFile.close();
+	} else {
+		cout << "Unable to open operator map file";
+	}
+
 	yyparse();
 
 	return 0;
 }
 
-void yyerror( string MSG )
-{
+void yyerror( string MSG ) {
 	cout << MSG << endl;
 	exit (0);
 }
