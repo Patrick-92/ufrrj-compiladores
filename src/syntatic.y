@@ -14,21 +14,6 @@ struct attributes {
 	string transl;
 };
 
-typedef tuple<string, string, string> typeOpTuple;
-
-map<typeOpTuple, string> opMap;
-string type1, type2, op, typeRes;
-ifstream opMapFile ("../util/opmap.dat");
-
-if (opMapFile.is_open()) {
-	while (opMapFile >> type1 >> type2 >> op >> typeRes)
-    	myMap[typeOpTuple(type1, op, type2)] = typeRes;
-	
-	myfile.close();
-} else {
-	cout << "Unable to open operator map file";
-}
-
 int tempGen = 0;
 
 string getNextVar();
@@ -40,6 +25,7 @@ void yyerror(string);
 %token TK_NUM
 %token TK_MAIN TK_ID TK_INT_TYPE
 %token TK_FIM TK_ERROR
+%token TK_BREAK
 
 %start S
 
@@ -50,7 +36,7 @@ void yyerror(string);
 
 S 			: TK_INT_TYPE TK_MAIN '(' ')' BLOCK {
 				cout << "/* Succinct lang */\n" << 
-				"#include <iostream>\n#include<string.h>\n#include<stdio.h>\nint main(void) {\n" 
+				"#include <iostream>\n#include <string.h>\n#include <stdio.h>\nint main(void) {\n" 
 				<< $5.transl << "\treturn 0;\n}" << endl;
 			}
 			;
@@ -60,14 +46,15 @@ BLOCK		: '{' STATEMENTS '}' {
 			}
 			;
 
-STATEMENTS	: STATEMENT STATEMENTS
+STATEMENTS	: STATEMENT STATEMENTS {
+				$$.transl = $1.transl + "\n" + $2.transl;
+			}
 			|
 			;
 
 STATEMENT 	: E ';' {
 				$$.transl = $1.transl;
-			}
-			;
+			};
 
 E 			: E '+' E {
 				string var = getNextVar();
@@ -103,7 +90,7 @@ E 			: E '+' E {
 				$$.transl = "\t" + $1.type + " " + var + " = " + $1.transl + ";\n";
 				$$.label = var;
 			}
-			| TK_ID
+			| TK_ID 
 			;
 
 %%
