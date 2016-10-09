@@ -27,7 +27,11 @@
 *.exe
 *.out
 *.app
+bin/*
 
 # Flex files
 lex.yy.c
-*.l
+
+# Yacc files
+y.tab.c
+y.tab.h
