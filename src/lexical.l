@@ -32,8 +32,8 @@ INT     	{DIGIT}+
 FLOAT   	{DIGIT}+(\.{DIGIT}*)?([eE][\-\+]?{DIGIT}+)?[fF]
 DOUBLE		{DIGIT}+(\.{DIGIT}*)?([eE][\-\+]?{DIGIT}+)?[dD]?
 LONG		{DIGIT}+[lL]
-CHAR		\'[^\'\n]\'c
-STRING		\'[^\'\n]\'|\"[^\'\n]\"
+CHAR		\'[^\'\n]\'
+STRING		\'[^\'\n]+\'|\"[^\'\n]+\"
 BOOL        "true"|"false"
 
 ID          {ALPHA}*{LOALPHA}{ALPHA}*
@@ -50,17 +50,17 @@ COMML	    "//".*\n
 
 "main"		{ return TK_MAIN; }
 
-"int"		{ yylval.transl = yytext; return TK_INT; }
-"float"		{ yylval.transl = yytext; return TK_FLOAT; }
-"double"	{ yylval.transl = yytext; return TK_DOUBLE; }
-"long"		{ yylval.transl = yytext; return TK_LONG; }
-"char"		{ yylval.transl = yytext; return TK_CHAR; }
-"string"	{ yylval.transl = yytext; return TK_STRING; }
-"bool"      { yylval.transl = yytext; return TK_BOOL; }
+"int"		{ yylval.transl = yytext; return TK_INT_TYPE; }
+"float"		{ yylval.transl = yytext; return TK_FLOAT_TYPE; }
+"double"	{ yylval.transl = yytext; return TK_DOUBLE_TYPE; }
+"long"		{ yylval.transl = yytext; return TK_LONG_TYPE; }
+"char"		{ yylval.transl = yytext; return TK_CHAR_TYPE; }
+"string"	{ yylval.transl = yytext; return TK_STRING_TYPE; }
+"bool"      { yylval.transl = yytext; return TK_BOOL_TYPE; }
 
 [(){}[\];,]	{ return *yytext; }
 
-[+\-*/=]		{ return *yytext; }
+[+\-*/=]	{ return *yytext; }
 
 {INT}		{
     yylval.transl = "";
@@ -81,6 +81,13 @@ COMML	    "//".*\n
     yylval.label = yytext;
     yylval.type = "float";
     return TK_NUM;
+}
+
+{CHAR}      {
+    yylval.transl = "";
+    yylval.label = yytext;
+    yylval.type = "char";
+    return TK_CHAR;
 }
 
 {BOOL}      {

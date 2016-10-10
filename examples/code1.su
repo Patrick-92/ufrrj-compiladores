@@ -4,4 +4,5 @@ int main() {
 	float x = 3.0f;
 	x + 1;
 	bool x = true;
+	char k = 'c';
 }

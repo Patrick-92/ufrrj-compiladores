@@ -34,8 +34,9 @@ int yylex(void);
 void yyerror(string);
 %}
 
-%token TK_NUM
-%token TK_MAIN TK_ID TK_INT TK_FLOAT TK_DOUBLE TK_LONG TK_CHAR TK_STRING TK_BOOL
+%token TK_NUM TK_CHAR TK_BOOL
+%token TK_MAIN TK_ID TK_INT_TYPE TK_FLOAT_TYPE TK_CHAR_TYPE
+%token TK_DOUBLE_TYPE TK_LONG_TYPE TK_STRING_TYPE TK_BOOL_TYPE
 %token TK_FIM TK_ERROR
 %token TK_BREAK
 
@@ -46,7 +47,7 @@ void yyerror(string);
 
 %%
 
-S 			: TK_INT TK_MAIN '(' ')' BLOCK {
+S 			: TK_INT_TYPE TK_MAIN '(' ')' BLOCK {
 				cout << "/* Succinct lang */\n" << 
 				"#include <iostream>\n#include <string.h>\n#include <stdio.h>\nint main(void) {\n" 
 				<< $5.transl << "\treturn 0;\n}" << endl;
@@ -136,6 +137,12 @@ E 			: E '+' E {
 				$$.transl = "\tint " + var + " = " + $1.label + ";\n";
 				$$.label = var;
 			}
+			| TK_CHAR {
+				string var = getNextVar();
+				
+				$$.transl = "\t" + $1.type + " " + var + " = " + $1.label + ";\n";
+				$$.label = var;
+			}
 			| TK_ID {
 				var_info varInfo = varMap[$1.label];
 				
@@ -149,13 +156,13 @@ E 			: E '+' E {
 				}
 			};
 			
-TYPE		: TK_INT
-			| TK_FLOAT
-			| TK_DOUBLE
-			| TK_LONG
-			| TK_CHAR
-			| TK_STRING
-			| TK_BOOL
+TYPE		: TK_INT_TYPE
+			| TK_FLOAT_TYPE
+			| TK_DOUBLE_TYPE
+			| TK_LONG_TYPE
+			| TK_CHAR_TYPE
+			| TK_STRING_TYPE
+			| TK_BOOL_TYPE
 			;
 
 %%
