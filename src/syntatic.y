@@ -117,10 +117,21 @@ E 			: E '+' E {
 			| TK_NUM {
 				string var = getNextVar();
 				
-				$$.transl = "\t" + $1.type + " " + var + " = " + $1.transl + ";\n";
+				$$.transl = "\t" + $1.type + " " + var + " = " + $1.label + ";\n";
 				$$.label = var;
 			}
-			;
+			| TK_ID {
+				var_info varInfo = varMap[$1.label];
+				
+				if (varInfo.name.size()) {
+					$$.type = varInfo.type;
+					$$.label = varInfo.name;
+				} else {
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
+			};
 			
 TYPE		: TK_INT
 			| TK_FLOAT

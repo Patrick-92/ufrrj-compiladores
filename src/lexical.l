@@ -61,19 +61,22 @@ COMML	    "//".*\n
 [+\-*/=]		{ return *yytext; }
 
 {INT}		{
-    yylval.transl = yytext;
+    yylval.transl = "";
+    yylval.label = yytext;
     yylval.type = "int";
     return TK_NUM;
 }
 
 {DOUBLE}    { 
-    yylval.transl = yytext;
+    yylval.transl = "";
+    yylval.label = yytext;
     yylval.type = "double";
     return TK_NUM;
 }
 
 {FLOAT}     { 
-    yylval.transl = yytext;
+    yylval.transl = "";
+    yylval.label = yytext;
     yylval.type = "float";
     return TK_NUM;
 }
