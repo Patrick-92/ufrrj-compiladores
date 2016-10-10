@@ -34,6 +34,7 @@ DOUBLE		{DIGIT}+(\.{DIGIT}*)?([eE][\-\+]?{DIGIT}+)?[dD]?
 LONG		{DIGIT}+[lL]
 CHAR		\'[^\'\n]\'c
 STRING		\'[^\'\n]\'|\"[^\'\n]\"
+BOOL        "true"|"false"
 
 ID          {ALPHA}*{LOALPHA}{ALPHA}*
 CONST       [{UPALPHA}_\-]*{UPPER}[{UPALPHA}_\-*]
@@ -55,6 +56,7 @@ COMML	    "//".*\n
 "long"		{ yylval.transl = yytext; return TK_LONG; }
 "char"		{ yylval.transl = yytext; return TK_CHAR; }
 "string"	{ yylval.transl = yytext; return TK_STRING; }
+"bool"      { yylval.transl = yytext; return TK_BOOL; }
 
 [(){}[\];,]	{ return *yytext; }
 
@@ -79,6 +81,13 @@ COMML	    "//".*\n
     yylval.label = yytext;
     yylval.type = "float";
     return TK_NUM;
+}
+
+{BOOL}      {
+    yylval.transl = "";
+    yylval.label = yytext;
+    yylval.type = "bool";
+    return TK_BOOL;
 }
 
 {ID}		{ yylval.label = yytext; return TK_ID; }

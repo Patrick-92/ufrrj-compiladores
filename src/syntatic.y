@@ -35,7 +35,7 @@ void yyerror(string);
 %}
 
 %token TK_NUM
-%token TK_MAIN TK_ID TK_INT TK_FLOAT TK_DOUBLE TK_LONG TK_CHAR TK_STRING
+%token TK_MAIN TK_ID TK_INT TK_FLOAT TK_DOUBLE TK_LONG TK_CHAR TK_STRING TK_BOOL
 %token TK_FIM TK_ERROR
 %token TK_BREAK
 
@@ -80,15 +80,23 @@ ATTRIBUTION	: TYPE TK_ID '=' E {
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
-			}
+			};
 
 E 			: E '+' E {
 				string var = getNextVar();
 				
-				$$.type = opMap[$1.type + "+" + $2.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " + " + $3.label + ";\n";
-				$$.label = var;
+				string resType = opMap[$1.type + "+" + $2.type];
+				
+				if (resType.size()) {
+					$$.type = resType;
+					$$.transl = $1.transl + $3.transl + 
+						"\t" + $$.type + " " + var + " = " + $1.label + " + " + $3.label + ";\n";
+					$$.label = var;
+				} else {
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
 			}
 			| E '-' E {
 				string var = getNextVar();
@@ -120,6 +128,14 @@ E 			: E '+' E {
 				$$.transl = "\t" + $1.type + " " + var + " = " + $1.label + ";\n";
 				$$.label = var;
 			}
+			| TK_BOOL {
+				string var = getNextVar();
+				
+				$1.label = ($1.label == "true"? "1" : "0");
+				
+				$$.transl = "\tint " + var + " = " + $1.label + ";\n";
+				$$.label = var;
+			}
 			| TK_ID {
 				var_info varInfo = varMap[$1.label];
 				
@@ -139,6 +155,7 @@ TYPE		: TK_INT
 			| TK_LONG
 			| TK_CHAR
 			| TK_STRING
+			| TK_BOOL
 			;
 
 %%
