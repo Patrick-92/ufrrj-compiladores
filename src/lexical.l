@@ -49,7 +49,12 @@ COMML	    "//".*\n
 
 "main"		{ return TK_MAIN; }
 
-"int"		{ return TK_INT_TYPE; }
+"int"		{ yylval.transl = yytext; return TK_INT; }
+"float"		{ yylval.transl = yytext; return TK_FLOAT; }
+"double"	{ yylval.transl = yytext; return TK_DOUBLE; }
+"long"		{ yylval.transl = yytext; return TK_LONG; }
+"char"		{ yylval.transl = yytext; return TK_CHAR; }
+"string"	{ yylval.transl = yytext; return TK_STRING; }
 
 [(){}[\];,]	{ return *yytext; }
 

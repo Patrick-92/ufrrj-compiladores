@@ -4,6 +4,7 @@
 #include <sstream>
 #include <map>
 #include <fstream>
+#include <vector>
 
 #define YYSTYPE attributes
 
@@ -15,10 +16,16 @@ struct attributes {
 	string transl;
 };
 
-map<string, string> opMap;
+typedef struct var_info {
+	string type;
+	string name;
+} var_info;
+
 string type1, type2, op, typeRes;
 ifstream opMapFile;
 
+map<string, string> opMap;
+map<string, var_info> varMap;
 int tempGen = 0;
 
 string getNextVar();
@@ -28,7 +35,7 @@ void yyerror(string);
 %}
 
 %token TK_NUM
-%token TK_MAIN TK_ID TK_INT_TYPE
+%token TK_MAIN TK_ID TK_INT TK_FLOAT TK_DOUBLE TK_LONG TK_CHAR TK_STRING
 %token TK_FIM TK_ERROR
 %token TK_BREAK
 
@@ -39,25 +46,22 @@ void yyerror(string);
 
 %%
 
-S 			: TK_INT_TYPE TK_MAIN '(' ')' BLOCK {
+S 			: TK_INT TK_MAIN '(' ')' BLOCK {
 				cout << "/* Succinct lang */\n" << 
 				"#include <iostream>\n#include <string.h>\n#include <stdio.h>\nint main(void) {\n" 
 				<< $5.transl << "\treturn 0;\n}" << endl;
-			}
-			;
+			};
 
 BLOCK		: '{' STATEMENTS '}' {
 				$$.transl = $2.transl;
-			}
-			;
+			};
 
 STATEMENTS	: STATEMENT STATEMENTS {
 				$$.transl = $1.transl + "\n" + $2.transl;
 			}
 			| STATEMENT {
 				$$.transl = $1.transl + "\n";
-			}
-			;
+			};
 
 STATEMENT 	: E ';' {
 				$$.transl = $1.transl;
@@ -100,9 +104,40 @@ E 			: E '+' E {
 				
 				$$.transl = "\t" + $1.type + " " + var + " = " + $1.transl + ";\n";
 				$$.label = var;
-			}
-			| TK_ID 
-			;
+			}/*
+			| TYPE TK_ID '=' E {
+				string var = getNextVar();
+				
+				if ($4.type == $1.transl) {
+					$$.transl = $4.transl + "\t" + $1.transl + var + " = " + $4.label + ";\n";
+					
+					varMap[$2.label] = pair<string, string>($1.transl, var);
+				} else {
+					// handle conversion or throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
+			}*/
+			| TK_ID { // todo
+				string var = getNextVar();
+				var_info varInfo = varMap[$1.label];
+				
+				if (varInfo.name.size()) {
+					$$.type = varInfo.type;
+					$$.transl = "\t" + $1.type + " " + var + " = " + varInfo.name + ";\n";
+				} else {
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
+			};
+			
+/*TYPE		: TK_INT
+			| TK_FLOAT
+			| TK_DOUBLE
+			| TK_LONG
+			| TK_CHAR
+			| TK_STRING*/
 
 %%
 
