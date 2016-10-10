@@ -58,7 +58,7 @@ COMML	    "//".*\n
 
 [(){}[\];,]	{ return *yytext; }
 
-[+\-*/]		{ return *yytext; }
+[+\-*/=]		{ return *yytext; }
 
 {INT}		{
     yylval.transl = yytext;

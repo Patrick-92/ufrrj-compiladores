@@ -65,7 +65,22 @@ STATEMENTS	: STATEMENT STATEMENTS {
 
 STATEMENT 	: E ';' {
 				$$.transl = $1.transl;
+			}
+			| ATTRIBUTION ';' {
+				$$.transl = $1.transl;
 			};
+			
+ATTRIBUTION	: TYPE TK_ID '=' E {
+				if ($4.type == $1.transl) {
+					$$.transl = $4.transl;
+					
+					varMap[$2.label] = {$1.transl, $4.label};
+				} else {
+					// handle conversion or throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
+			}
 
 E 			: E '+' E {
 				string var = getNextVar();
@@ -104,40 +119,16 @@ E 			: E '+' E {
 				
 				$$.transl = "\t" + $1.type + " " + var + " = " + $1.transl + ";\n";
 				$$.label = var;
-			}/*
-			| TYPE TK_ID '=' E {
-				string var = getNextVar();
-				
-				if ($4.type == $1.transl) {
-					$$.transl = $4.transl + "\t" + $1.transl + var + " = " + $4.label + ";\n";
-					
-					varMap[$2.label] = pair<string, string>($1.transl, var);
-				} else {
-					// handle conversion or throw compile error
-					$$.type = "ERROR";
-					$$.transl = "ERROR";
-				}
-			}*/
-			| TK_ID { // todo
-				string var = getNextVar();
-				var_info varInfo = varMap[$1.label];
-				
-				if (varInfo.name.size()) {
-					$$.type = varInfo.type;
-					$$.transl = "\t" + $1.type + " " + var + " = " + varInfo.name + ";\n";
-				} else {
-					// throw compile error
-					$$.type = "ERROR";
-					$$.transl = "ERROR";
-				}
-			};
+			}
+			;
 			
-/*TYPE		: TK_INT
+TYPE		: TK_INT
 			| TK_FLOAT
 			| TK_DOUBLE
 			| TK_LONG
 			| TK_CHAR
-			| TK_STRING*/
+			| TK_STRING
+			;
 
 %%
 
