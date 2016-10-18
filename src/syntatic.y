@@ -86,6 +86,40 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
+			}
+			| TK_ID '=' EXPR {
+				if (varMap.count($1.label)) {
+					var_info info = varMap[$1.label];
+					
+					// se tipo da expr for igual a do id
+					if (info.type == $3.type) {
+						varMap[$1.label] = {info.type, $3.label};
+						$$.type = $3.type;
+						$$.transl = $3.transl;
+						$$.label = $3.label;
+					} else {
+						string var = getNextVar();
+						string resType = opMap[info.type + "=" + $3.type];
+						
+						// se conversão é permitida
+						if (resType.size()) {
+							$$.transl = $3.transl + "\t" + info.type + " " + 
+								var + " = (" + info.type + ") " + $3.label + ";\n";
+							$$.type = info.type;
+							$$.label = var;
+							
+							varMap[$1.label] = {info.type, var};
+						} else {
+							// throw compile error
+							$$.type = "ERROR";
+							$$.transl = "ERROR";
+						}
+					}
+				} else {
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
 			};
 
 EXPR 		: EXPR '+' EXPR {
@@ -176,7 +210,7 @@ TYPE		: TK_INT_TYPE
 
 int yyparse();
 
-int main( int argc, char* argv[] ) {
+int main(int argc, char* argv[]) {
 	opMapFile.open("util/opmap.dat");
 	
 	if (opMapFile.is_open()) {
