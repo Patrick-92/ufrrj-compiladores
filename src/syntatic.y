@@ -77,10 +77,16 @@ STATEMENT 	: EXPR ';' {
 			};
 			
 ATTRIBUTION	: TYPE TK_ID '=' EXPR {
-				if ($4.type == $1.transl) {
-					$$.transl = $4.transl;
-					
-					varMap[$2.label] = {$1.transl, $4.label};
+				if (!varMap.count($2.label)) {
+					if ($4.type == $1.transl) {
+						$$.transl = $4.transl;
+						
+						varMap[$2.label] = {$1.transl, $4.label};
+					} else {
+						// handle conversion or throw compile error
+						$$.type = "ERROR";
+						$$.transl = "ERROR";
+					}
 				} else {
 					// handle conversion or throw compile error
 					$$.type = "ERROR";
