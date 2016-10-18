@@ -11,14 +11,14 @@
 using namespace std;
 
 struct attributes {
-	string label;
-	string type;
-	string transl;
+	string label; // nome da variável usada no cód. intermediário (ex: "t0")
+	string type; // tipo no código intermediário (ex: "int")
+	string transl; // código intermediário (ex: "int t11 = 1;")
 };
 
 typedef struct var_info {
-	string type;
-	string name;
+	string type; // tipo da variável usada no cód. intermediário (ex: "int")
+	string name; // nome da variável usada no cód. intermediário (ex: "t0")
 } var_info;
 
 string type1, type2, op, typeRes;
@@ -48,9 +48,14 @@ void yyerror(string);
 %%
 
 S 			: TK_INT_TYPE TK_MAIN '(' ')' BLOCK {
-				cout << "/* Succinct lang */\n" << 
-				"#include <iostream>\n#include <string.h>\n#include <stdio.h>\nint main(void) {\n" 
-				<< $5.transl << "\treturn 0;\n}" << endl;
+				cout << 
+				"/* Succinct lang */" << endl <<
+				"#include <iostream>" << endl <<
+				"#include <string.h>" << endl <<
+				"#include <stdio.h>" << endl <<
+				"int main(void) {" << endl <<
+				$5.transl << 
+				"\treturn 0;\n}" << endl;
 			};
 
 BLOCK		: '{' STATEMENTS '}' {
@@ -64,14 +69,14 @@ STATEMENTS	: STATEMENT STATEMENTS {
 				$$.transl = $1.transl + "\n";
 			};
 
-STATEMENT 	: E ';' {
+STATEMENT 	: EXPR ';' {
 				$$.transl = $1.transl;
 			}
 			| ATTRIBUTION ';' {
 				$$.transl = $1.transl;
 			};
 			
-ATTRIBUTION	: TYPE TK_ID '=' E {
+ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				if ($4.type == $1.transl) {
 					$$.transl = $4.transl;
 					
@@ -83,7 +88,7 @@ ATTRIBUTION	: TYPE TK_ID '=' E {
 				}
 			};
 
-E 			: E '+' E {
+EXPR 		: EXPR '+' EXPR {
 				string var = getNextVar();
 				
 				string resType = opMap[$1.type + "+" + $2.type];
@@ -99,7 +104,7 @@ E 			: E '+' E {
 					$$.transl = "ERROR";
 				}
 			}
-			| E '-' E {
+			| EXPR '-' EXPR {
 				string var = getNextVar();
 				
 				$$.type = opMap[$1.type + "-" + $2.type];
@@ -107,7 +112,7 @@ E 			: E '+' E {
 					"\t" + $$.type + " " + var + " = " + $1.label + " - " + $3.label + ";\n";
 				$$.label = var;
 			}
-			| E '*' E {
+			| EXPR '*' EXPR {
 				string var = getNextVar();
 				
 				$$.type = opMap[$1.type + "*" + $2.type];
@@ -115,7 +120,7 @@ E 			: E '+' E {
 					"\t" + $$.type + " " + var + " = " + $1.label + " * " + $3.label + ";\n";
 				$$.label = var;
 			}
-			| E '/' E {
+			| EXPR '/' EXPR {
 				string var = getNextVar();
 				
 				$$.type = opMap[$1.type + "/" + $2.type];
