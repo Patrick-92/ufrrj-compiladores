@@ -11,4 +11,6 @@ int main() {
 	float a = 1.0f;
 	
 	a = 2.0;
+	
+	float i;
 }
