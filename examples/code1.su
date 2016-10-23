@@ -1,16 +1,15 @@
 int main() {
-	1.0 * 2 - 3;
-	4 + 5;
-	float x = 3.0f;
-	x + 1;
-	bool b = true;
-	char k = 'c';
+	4 and 2 or 3;
+	4 or 2;
+	4 < 2;
 	
-	k = 'z';
+	int i = (int) 1.0f;
+	int j = 2;
 	
-	float a = 1.0f;
+	(double) 2.0f;
 	
-	a = 2.0;
+	(float) 3 / 2;
 	
-	float i;
+	(float) j;
+	
 }

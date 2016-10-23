@@ -39,6 +39,8 @@ BOOL        "true"|"false"
 ID          {ALPHA}*{LOALPHA}{ALPHA}*
 CONST       [{UPALPHA}_\-]*{UPPER}[{UPALPHA}_\-*]
 
+PARAM {ID}|({INT}|{FLOAT}|{DOUBLE})
+
 COMMBST	    "/*"
 COMMBFN     "*/"
 COMMB       {COMMBST}[^{COMMBFN}]*{COMMBFN}
@@ -60,7 +62,15 @@ COMML	    "//".*\n
 
 [(){}[\];,]	{ return *yytext; }
 
-[+\-*/=]	{ return *yytext; }
+[+\-*/=><]	{ return *yytext; }
+
+"=="        { return TK_EQUAL; }
+"!="        { return TK_NOT; }
+">="        { return TK_GTE; }
+"<="        { return TK_LTE; }
+"and"       { return TK_AND; }
+"or"        { return TK_OR; }
+
 
 {INT}		{
     yylval.transl = "";
@@ -98,6 +108,8 @@ COMML	    "//".*\n
 }
 
 {ID}		{ yylval.label = yytext; return TK_ID; }
+
+{PARAM}     { yylval.label = yytext; return TK_PARAM; }
 
 {BREAK}		{}
 

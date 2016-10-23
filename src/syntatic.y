@@ -35,16 +35,25 @@ int yylex(void);
 void yyerror(string);
 %}
 
+%token TK_PARAM
 %token TK_NUM TK_CHAR TK_BOOL
-%token TK_MAIN TK_ID TK_INT_TYPE TK_FLOAT_TYPE TK_CHAR_TYPE
+%token TK_MAIN TK_ID TK_INT_TYPE TK_FLOAT_TYPE TK_CHAR_TYPE 
 %token TK_DOUBLE_TYPE TK_LONG_TYPE TK_STRING_TYPE TK_BOOL_TYPE
 %token TK_FIM TK_ERROR
 %token TK_BREAK
+%token TK_AND "and"
+%token TK_OR "or"
+%token TK_GTE ">="
+%token TK_LTE "<="
+%token TK_NOT "!="
+%token TK_EQUAL "=="
 
 %start S
 
 %left '+' '-'
 %left '*' '/'
+%left '<' '>' "<=" ">="
+%left "and" "or" "!="
 
 %%
 
@@ -148,7 +157,7 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 EXPR 		: EXPR '+' EXPR {
 				string var = getNextVar();
 				
-				string resType = opMap[$1.type + "+" + $2.type];
+				string resType = opMap[$1.type + "+" + $3.type];
 				
 				if (resType.size()) {
 					$$.type = resType;
@@ -164,7 +173,7 @@ EXPR 		: EXPR '+' EXPR {
 			| EXPR '-' EXPR {
 				string var = getNextVar();
 				
-				$$.type = opMap[$1.type + "-" + $2.type];
+				$$.type = opMap[$1.type + "-" + $3.type];
 				$$.transl = $1.transl + $3.transl + 
 					"\t" + $$.type + " " + var + " = " + $1.label + " - " + $3.label + ";\n";
 				$$.label = var;
@@ -172,7 +181,7 @@ EXPR 		: EXPR '+' EXPR {
 			| EXPR '*' EXPR {
 				string var = getNextVar();
 				
-				$$.type = opMap[$1.type + "*" + $2.type];
+				$$.type = opMap[$1.type + "*" + $3.type];
 				$$.transl = $1.transl + $3.transl + 
 					"\t" + $$.type + " " + var + " = " + $1.label + " * " + $3.label + ";\n";
 				$$.label = var;
@@ -180,12 +189,112 @@ EXPR 		: EXPR '+' EXPR {
 			| EXPR '/' EXPR {
 				string var = getNextVar();
 				
-				$$.type = opMap[$1.type + "/" + $2.type];
+				$$.type = opMap[$1.type + "/" + $3.type];
 				$$.transl = $1.transl + $3.transl + 
 					"\t" + $$.type + " " + var + " = " + $1.label + " / " + $3.label + ";\n";
 				$$.label = var;
 			}
-			| TK_NUM {
+			| EXPR '<' EXPR {
+				string var = getNextVar();
+				
+				$$.type = opMap[$1.type + "<" + $3.type];
+				$$.transl = $1.transl + $3.transl + 
+					"\t" + $$.type + " " + var + " = " + $1.label + " < " + $3.label + ";\n";
+				$$.label = var;
+			}
+			| EXPR '>' EXPR {
+				string var = getNextVar();
+				
+				$$.type = opMap[$1.type + ">" + $3.type];
+				$$.transl = $1.transl + $3.transl + 
+					"\t" + $$.type + " " + var + " = " + $1.label + " > " + $3.label + ";\n";
+				$$.label = var;
+			}
+			| EXPR "<=" EXPR {
+				string var = getNextVar();
+				
+				$$.type = opMap[$1.type + "<=" + $3.type];
+				$$.transl = $1.transl + $3.transl + 
+					"\t" + $$.type + " " + var + " = " + $1.label + " <= " + $3.label + ";\n";
+				$$.label = var;
+			}
+			| EXPR ">=" EXPR {
+				string var = getNextVar();
+				
+				$$.type = opMap[$1.type + ">=" + $3.type];
+				$$.transl = $1.transl + $3.transl + 
+					"\t" + $$.type + " " + var + " = " + $1.label + " >= " + $3.label + ";\n";
+				$$.label = var;
+			}
+			| EXPR "==" EXPR {
+				string var = getNextVar();
+				
+				$$.type = opMap[$1.type + "==" + $3.type];
+				$$.transl = $1.transl + $3.transl + 
+					"\t" + $$.type + " " + var + " = " + $1.label + " == " + $3.label + ";\n";
+				$$.label = var;
+			}
+			| EXPR "!=" EXPR {
+				string var = getNextVar();
+				
+				$$.type = opMap[$1.type + "!=" + $3.type];
+				$$.transl = $1.transl + $3.transl + 
+					"\t" + $$.type + " " + var + " = " + $1.label + " != " + $3.label + ";\n";
+				$$.label = var;
+			}
+			| EXPR "and" EXPR {
+				string var = getNextVar();
+				
+				$$.type = opMap[$1.type + "&&" + $3.type];
+				$$.transl = $1.transl + $3.transl + 
+					"\t" + $$.type + " " + var + " = " + $1.label + " && " + $3.label + ";\n";
+				$$.label = var;
+			}
+			| EXPR "or" EXPR {
+				string var = getNextVar();
+				
+				$$.type = opMap[$1.type + "||" + $3.type];
+				$$.transl = $1.transl + $3.transl + 
+					"\t" + $$.type + " " + var + " = " + $1.label + " || " + $3.label + ";\n";
+				$$.label = var;
+			}
+			| '(' TYPE ')' VALUE {
+				string var = getNextVar();
+				string type = opMap[$2.type + "cast" + $4.type];
+				
+				if (type.size()) {
+					$$.type = type;
+					$$.transl = $4.transl + 
+						"\t" + $$.type + " " + var + " = (" + $2.transl + ") " + $4.label + ";\n";
+					$$.label = var;
+				} else {
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
+			}
+			| VALUE {
+				$$.transl = $1.transl;
+				$$.label = $1.label;
+				$$.type = $1.type;
+			};
+			
+TYPE		: TK_INT_TYPE
+			| TK_FLOAT_TYPE
+			| TK_DOUBLE_TYPE
+			| TK_LONG_TYPE
+			| TK_CHAR_TYPE
+			| TK_STRING_TYPE
+			| TK_BOOL_TYPE
+			;
+			
+VALUE		: TK_NUM {
+				string var = getNextVar();
+				
+				$$.transl = "\t" + $1.type + " " + var + " = " + $1.label + ";\n";
+				$$.label = var;
+			}
+			| TK_CHAR {
 				string var = getNextVar();
 				
 				$$.transl = "\t" + $1.type + " " + var + " = " + $1.label + ";\n";
@@ -199,33 +308,19 @@ EXPR 		: EXPR '+' EXPR {
 				$$.transl = "\tint " + var + " = " + $1.label + ";\n";
 				$$.label = var;
 			}
-			| TK_CHAR {
-				string var = getNextVar();
-				
-				$$.transl = "\t" + $1.type + " " + var + " = " + $1.label + ";\n";
-				$$.label = var;
-			}
 			| TK_ID {
 				var_info varInfo = varMap[$1.label];
 				
 				if (varInfo.name.size()) {
 					$$.type = varInfo.type;
 					$$.label = varInfo.name;
+					$$.transl = "";
 				} else {
 					// throw compile error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
-			};
-			
-TYPE		: TK_INT_TYPE
-			| TK_FLOAT_TYPE
-			| TK_DOUBLE_TYPE
-			| TK_LONG_TYPE
-			| TK_CHAR_TYPE
-			| TK_STRING_TYPE
-			| TK_BOOL_TYPE
-			;
+			}
 
 %%
 
