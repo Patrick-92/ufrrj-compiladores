@@ -31,6 +31,7 @@ int tempGen = 0;
 
 string getNextVar();
 
+
 int yylex(void);
 void yyerror(string);
 %}
@@ -60,7 +61,7 @@ void yyerror(string);
 
 S 			: TK_INT_TYPE TK_MAIN '(' ')' BLOCK {
 				cout << 
-				"/* Succinct lang */" << endl <<
+				"/* Nebulous */" << endl <<
 				"#include <iostream>" << endl <<
 				"#include <string.h>" << endl <<
 				"#include <stdio.h>" << endl <<
@@ -159,6 +160,14 @@ EXPR 		: EXPR '+' EXPR {
 				string var = getNextVar();
 				
 				string resType = opMap[$1.type + "+" + $3.type];
+				
+				if($1.type != resType){
+					$1.transl = $1.transl +
+					"\t" + "(" + resType + ")" + $1.label + ";\n";
+				}else if($3.type != resType){
+					$3.transl = $3.transl +
+					"\t" + "(" + resType + ")" + $3.label + ";\n";
+				}
 				
 				if (resType.size()) {
 					$$.type = resType;
@@ -260,6 +269,7 @@ EXPR 		: EXPR '+' EXPR {
 				string var = getNextVar();
 				
 				if($1.type == "bool" && $3.type == "bool"){
+					
 					$$.transl = $1.transl + $3.transl + 
 						"\t" + $$.type + " " + var + " = " + $1.label + " || " + $3.label + ";\n";
 					$$.label = var;
