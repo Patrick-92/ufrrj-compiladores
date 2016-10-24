@@ -65,11 +65,12 @@ COMML	    "//".*\n
 [+\-*/=><]	{ return *yytext; }
 
 "=="        { return TK_EQUAL; }
-"!="        { return TK_NOT; }
+"!="        { return TK_DIFFERENCE; }
 ">="        { return TK_GTE; }
 "<="        { return TK_LTE; }
 "and"       { return TK_AND; }
 "or"        { return TK_OR; }
+"not"        { return TK_NOT; }
 
 
 {INT}		{

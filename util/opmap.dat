@@ -58,7 +58,7 @@ bool = int bool
 bool = float bool
 bool = double bool
 bool = char bool
-bool = bool bool
+bool = bool float
 int < int int
 int < float int
 int < double int

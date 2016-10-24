@@ -43,17 +43,18 @@ void yyerror(string);
 %token TK_BREAK
 %token TK_AND "and"
 %token TK_OR "or"
+%token TK_NOT "not"
 %token TK_GTE ">="
 %token TK_LTE "<="
-%token TK_NOT "!="
+%token TK_DIFFERENCE "!="
 %token TK_EQUAL "=="
 
 %start S
 
 %left '+' '-'
 %left '*' '/'
-%left '<' '>' "<=" ">="
-%left "and" "or" "!="
+%left '<' '>' "<=" ">=" "!=" "=="
+%left "and" "or" "not"
 
 %%
 
@@ -245,18 +246,41 @@ EXPR 		: EXPR '+' EXPR {
 			| EXPR "and" EXPR {
 				string var = getNextVar();
 				
-				$$.type = opMap[$1.type + "&&" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " && " + $3.label + ";\n";
-				$$.label = var;
+				if($1.type == "bool" && $3.type == "bool"){
+					$$.transl = $1.transl + $3.transl + 
+						"\t" + $$.type + " " + var + " = " + $1.label + " && " + $3.label + ";\n";
+					$$.label = var;
+				}else{
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
 			}
 			| EXPR "or" EXPR {
 				string var = getNextVar();
 				
-				$$.type = opMap[$1.type + "||" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " || " + $3.label + ";\n";
-				$$.label = var;
+				if($1.type == "bool" && $3.type == "bool"){
+					$$.transl = $1.transl + $3.transl + 
+						"\t" + $$.type + " " + var + " = " + $1.label + " || " + $3.label + ";\n";
+					$$.label = var;
+				}else{
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
+			}
+			| "not" EXPR {
+				string var = getNextVar();
+				
+				if($2.type == "bool"){
+					$$.transl = $2.transl + 
+						"\t" + $$.type + " " + var + " =  ! " + $2.label + ";\n";
+					$$.label = var;
+				}else{
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}	
 			}
 			| '(' TYPE ')' VALUE {
 				string var = getNextVar();
