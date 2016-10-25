@@ -168,7 +168,6 @@ EXPR 		: EXPR '+' EXPR {
 					$3.transl = $3.transl +
 					"\t" + "(" + resType + ")" + $3.label + ";\n";
 				}
-				
 				if (resType.size()) {
 					$$.type = resType;
 					$$.transl = $1.transl + $3.transl + 
@@ -324,9 +323,15 @@ TYPE		: TK_INT_TYPE
 			
 VALUE		: TK_NUM {
 				string var = getNextVar();
-				
-				$$.transl = "\t" + $1.type + " " + var + " = " + $1.label + ";\n";
-				$$.label = var;
+				if($1.type == "float" || $1.type == "double"){
+					string fd = $1.label;
+					fd.erase(fd.end()-1, fd.end());
+					$$.transl = "\t" + $1.type + " " + var + " = " + fd + ";\n";
+					$$.label = var;
+				}else{
+					$$.transl = "\t" + $1.type + " " + var + " = " + $1.label + ";\n";
+					$$.label = var;
+				}
 			}
 			| TK_CHAR {
 				string var = getNextVar();
