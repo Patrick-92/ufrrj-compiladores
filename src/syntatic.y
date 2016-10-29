@@ -323,15 +323,18 @@ TYPE		: TK_INT_TYPE
 			
 VALUE		: TK_NUM {
 				string var = getNextVar();
-				if($1.type == "float" || $1.type == "double"){
-					string fd = $1.label;
-					fd.erase(fd.end()-1, fd.end());
-					$$.transl = "\t" + $1.type + " " + var + " = " + fd + ";\n";
-					$$.label = var;
-				}else{
-					$$.transl = "\t" + $1.type + " " + var + " = " + $1.label + ";\n";
-					$$.label = var;
+				string value = $1.label;
+				
+				if ($1.type == "float") {
+					value = to_string(stof(value));
+				} else if ($1.type == "double") {
+					value = to_string(stod(value));
+				} else if ($1.type == "long") {
+					value = to_string(stol(value));
 				}
+				
+				$$.transl = "\t" + $1.type + " " + var + " = " + value + ";\n";
+				$$.label = var;
 			}
 			| TK_CHAR {
 				string var = getNextVar();
