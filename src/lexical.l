@@ -72,6 +72,9 @@ COMML	    "//".*\n
 "or"        { return TK_OR; }
 "not"        { return TK_NOT; }
 
+"if"        { return TK_IF; }
+"while"     { return TK_WHILE; }
+"do"        { return TK_DO; }
 
 {INT}		{
     yylval.transl = "";

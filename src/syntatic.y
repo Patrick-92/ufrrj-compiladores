@@ -29,9 +29,12 @@ map<string, string> opMap;
 map<string, var_info> varMap;
 map<string, string> padraoMap;
 int tempGen = 0;
+int beginGen = 0;
+int endGen = 0;
 
 string getNextVar();
-
+string getBeginLabel();
+string getEndLabel();
 
 int yylex(void);
 void yyerror(string);
@@ -50,12 +53,15 @@ void yyerror(string);
 %token TK_LTE "<="
 %token TK_DIFFERENCE "!="
 %token TK_EQUAL "=="
+%token TK_IF "if"
+%token TK_WHILE "while"
+%token TK_DO "do"
 
 %start S
 
+%left '<' '>' "<=" ">=" "!=" "=="
 %left '+' '-'
 %left '*' '/'
-%left '<' '>' "<=" ">=" "!=" "=="
 %left "and" "or" "not"
 
 %%
@@ -93,6 +99,57 @@ STATEMENT 	: EXPR ';' {
 			}
 			| ATTRIBUTION ';' {
 				$$.transl = $1.transl;
+			}
+			| CONDITIONAL {
+				$$.transl = $1.transl;
+			};
+
+CONDITIONAL: "if" '(' EXPR ')' BLOCK {
+				if($3.type == "bool"){
+					string end = getEndLabel();
+					
+					$$.transl = $3.transl + 
+						"\t" + $3.label + " = !" + $3.label + ";\n" +
+						"\tif (" + $3.label + ") goto " + end + ";\n" +
+						$5.transl +
+						"\t" + end + ":";
+				}else{
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
+			}
+			| "while" '(' EXPR ')' BLOCK {
+				if($3.type == "bool"){
+					string begin = getBeginLabel();
+					string end = getEndLabel();
+					
+					$$.transl = $3.transl + 
+						"\t" + $3.label + " = !" + $3.label + ";\n" +
+						begin + ":\tif (" + $3.label + ") goto " + end + ";\n" +
+						$5.transl +
+						"\tgoto " + begin + ";\n" +
+						"\t" + end + ":";
+				}else{
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
+			}
+		| "do" BLOCK "while" '(' EXPR ')' ';' {
+				if($5.type == "bool"){
+					string begin = getBeginLabel();
+					string end = getEndLabel();
+					
+					$$.transl = $5.transl + 
+						"\t" + begin + ":\n" +
+						$2.transl +
+						"\tif (" + $5.label + ") goto " + begin + ";\n";
+				}else{
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
 			};
 			
 ATTRIBUTION	: TYPE TK_ID '=' EXPR {
@@ -165,21 +222,33 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 
 EXPR 		: EXPR '+' EXPR {
 				string var = getNextVar();
-				
 				string resType = opMap[$1.type + "+" + $3.type];
 				
-				if($1.type != resType){
-					$1.transl = $1.transl +
-					"\t" + "(" + resType + ")" + $1.label + ";\n";
-				}else if($3.type != resType){
-					$3.transl = $3.transl +
-					"\t" + "(" + resType + ")" + $3.label + ";\n";
-				}
 				if (resType.size()) {
+					$$.transl = $1.transl + $3.transl;
+					
+					if ($1.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $1.label + ";\n";
+						
+						$1.label = var1;
+					}
+					
+					if ($3.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $3.label + "\n";
+						
+						$3.label = var1;
+					}
+					
 					$$.type = resType;
 					decls.push_back("\t" + $$.type + " " + var + ";");
-					$$.transl = $1.transl + $3.transl + 
-						"\t" + var + " = " + $1.label + " + " + $3.label + ";\n";
+					$$.transl += "\t" + var + " = " + 
+						$1.label + " + " + $3.label + ";\n";
 					$$.label = var;
 				} else {
 					// throw compile error
@@ -189,26 +258,33 @@ EXPR 		: EXPR '+' EXPR {
 			}
 			| EXPR '-' EXPR {
 				string var = getNextVar();
-				
 				string resType = opMap[$1.type + "-" + $3.type];
-				$$.type = opMap[$1.type + "-" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " - " + $3.label + ";\n";
-				$$.label = var;
-				
-					if($1.type != resType){
-					$1.transl = $1.transl +
-					"\t" + "(" + resType + ")" + $1.label + ";\n";
-				}else if($3.type != resType){
-					$3.transl = $3.transl +
-					"\t" + "(" + resType + ")" + $3.label + ";\n";
-				}
 				
 				if (resType.size()) {
+					$$.transl = $1.transl + $3.transl;
+					
+					if ($1.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $1.label + ";\n";
+						
+						$1.label = var1;
+					}
+					
+					if ($3.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $3.label + "\n";
+						
+						$3.label = var1;
+					}
+					
 					$$.type = resType;
 					decls.push_back("\t" + $$.type + " " + var + ";");
-					$$.transl = $1.transl + $3.transl + 
-						"\t" + var + " = " + $1.label + " - " + $3.label + ";\n";
+					$$.transl += "\t" + var + " = " + 
+						$1.label + " - " + $3.label + ";\n";
 					$$.label = var;
 				} else {
 					// throw compile error
@@ -218,100 +294,144 @@ EXPR 		: EXPR '+' EXPR {
 			}
 			| EXPR '*' EXPR {
 				string var = getNextVar();
-				
-				string resType = opMap[$1.type + "-" + $3.type];
-				$$.type = opMap[$1.type + "-" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " * " + $3.label + ";\n";
-				$$.label = var;
-				
-					if($1.type != resType){
-					$1.transl = $1.transl +
-					"\t" + "(" + resType + ")" + $1.label + ";\n";
-				}else if($3.type != resType){
-					$3.transl = $3.transl +
-					"\t" + "(" + resType + ")" + $3.label + ";\n";
-				}
-				
+				string resType = opMap[$1.type + "*" + $3.type];
+			
 				if (resType.size()) {
+					$$.transl = $1.transl + $3.transl;
+					
+					if ($1.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $1.label + ";\n";
+						
+						$1.label = var1;
+					}
+					
+					if ($3.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $3.label + "\n";
+						
+						$3.label = var1;
+					}
+					
 					$$.type = resType;
 					decls.push_back("\t" + $$.type + " " + var + ";");
-					$$.transl = $1.transl + $3.transl + 
-						"\t" + var + " = " + $1.label + " * " + $3.label + ";\n";
+					$$.transl += "\t" + var + " = " + 
+						$1.label + " * " + $3.label + ";\n";
 					$$.label = var;
 				} else {
-					// throw compile error
+					// throw compiler error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
 			}
 			| EXPR '/' EXPR {
 				string var = getNextVar();
-				
-				string resType = opMap[$1.type + "-" + $3.type];
-				$$.type = opMap[$1.type + "-" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " / " + $3.label + ";\n";
-				$$.label = var;
-				
-					if($1.type != resType){
-					$1.transl = $1.transl +
-					"\t" + "(" + resType + ")" + $1.label + ";\n";
-				}else if($3.type != resType){
-					$3.transl = $3.transl +
-					"\t" + "(" + resType + ")" + $3.label + ";\n";
-				}
-				
+				string resType = opMap[$1.type + "/" + $3.type];
+			
 				if (resType.size()) {
+					$$.transl = $1.transl + $3.transl;
+					
+					if ($1.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $1.label + ";\n";
+						
+						$1.label = var1;
+					}
+					
+					if ($3.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $3.label + "\n";
+						
+						$3.label = var1;
+					}
+					
 					$$.type = resType;
 					decls.push_back("\t" + $$.type + " " + var + ";");
-					$$.transl = $1.transl + $3.transl + 
-						"\t" + var + " = " + $1.label + " / " + $3.label + ";\n";
+					$$.transl += "\t" + var + " = " + 
+						$1.label + " / " + $3.label + ";\n";
 					$$.label = var;
 				} else {
-					// throw compile error
+					// throw compiler error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
 			}
 			| EXPR '<' EXPR {
 				string var = getNextVar();
-				
 				string resType = opMap[$1.type + "<" + $3.type];
-				$$.type = opMap[$1.type + "<" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " < " + $3.label + ";\n";
-				$$.label = var;
 				
 				if (resType.size()) {
-					$$.type = resType;
-					decls.push_back("\t" + $$.type + " " + var + ";");
-					$$.transl = $1.transl + $3.transl + 
-						"\t" + var + " = " + $1.label + " < " + $3.label + ";\n";
+					$$.transl = $1.transl + $3.transl;
+					
+					if ($1.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $1.label + ";\n";
+						
+						$1.label = var1;
+					}
+					
+					if ($3.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $3.label + "\n";
+						
+						$3.label = var1;
+					}
+				
+					$$.type = "bool";
+					decls.push_back("\tint " + var + ";");
+					$$.transl += "\t" + var + " = " + 
+						$1.label + " < " + $3.label + ";\n";
 					$$.label = var;
 				} else {
-					// throw compile error
+					// throw compiler error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
 			}
 			| EXPR '>' EXPR {
 				string var = getNextVar();
-				
 				string resType = opMap[$1.type + ">" + $3.type];
-				$$.type = opMap[$1.type + ">" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " > " + $3.label + ";\n";
-				$$.label = var;
 				
 				if (resType.size()) {
-					$$.type = resType;
-					decls.push_back("\t" + $$.type + " " + var + ";");
-					$$.transl = $1.transl + $3.transl + 
-						"\t" + var + " = " + $1.label + " > " + $3.label + ";\n";
+					$$.transl = $1.transl + $3.transl;
+					
+					if ($1.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $1.label + ";\n";
+						
+						$1.label = var1;
+					}
+					
+					if ($3.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $3.label + "\n";
+						
+						$3.label = var1;
+					}
+				
+					$$.type = "bool";
+					decls.push_back("\tint " + var + ";");
+					$$.transl += "\t" + var + " = " + 
+						$1.label + " > " + $3.label + ";\n";
 					$$.label = var;
 				} else {
-					// throw compile error
+					// throw compiler error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
@@ -319,84 +439,144 @@ EXPR 		: EXPR '+' EXPR {
 			}
 			| EXPR "<=" EXPR {
 				string var = getNextVar();
-				
 				string resType = opMap[$1.type + "<=" + $3.type];
-				$$.type = opMap[$1.type + "<=" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " <= " + $3.label + ";\n";
-				$$.label = var;
 				
 				if (resType.size()) {
-					$$.type = resType;
-					decls.push_back("\t" + $$.type + " " + var + ";");
-					$$.transl = $1.transl + $3.transl + 
-						"\t" + var + " = " + $1.label + " > " + $3.label + ";\n";
+					$$.transl = $1.transl + $3.transl;
+					
+					if ($1.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $1.label + ";\n";
+						
+						$1.label = var1;
+					}
+					
+					if ($3.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $3.label + "\n";
+						
+						$3.label = var1;
+					}
+				
+					$$.type = "bool";
+					decls.push_back("\tint " + var + ";");
+					$$.transl += "\t" + var + " = " + 
+						$1.label + " <= " + $3.label + ";\n";
 					$$.label = var;
 				} else {
-					// throw compile error
+					// throw compiler error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
 			}
 			| EXPR ">=" EXPR {
 				string var = getNextVar();
-				
 				string resType = opMap[$1.type + ">=" + $3.type];
-				$$.type = opMap[$1.type + ">=" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " >= " + $3.label + ";\n";
-				$$.label = var;
 				
 				if (resType.size()) {
-					$$.type = resType;
-					decls.push_back("\t" + $$.type + " " + var + ";");
+					$$.transl = $1.transl + $3.transl;
+					
+					if ($1.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $1.label + ";\n";
+						
+						$1.label = var1;
+					}
+					
+					if ($3.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $3.label + "\n";
+						
+						$3.label = var1;
+					}
+				
+					$$.type = "bool";
+					decls.push_back("\tint " + var + ";");
 					$$.transl = $1.transl + $3.transl + 
 						"\t" + var + " = " + $1.label + " >= " + $3.label + ";\n";
 					$$.label = var;
 				} else {
-					// throw compile error
+					// throw compiler error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
 			}
 			| EXPR "==" EXPR {
 				string var = getNextVar();
-				
 				string resType = opMap[$1.type + "==" + $3.type];
-				$$.type = opMap[$1.type + "==" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " == " + $3.label + ";\n";
-				$$.label = var;
 				
 				if (resType.size()) {
-					$$.type = resType;
-					decls.push_back("\t" + $$.type + " " + var + ";");
+					$$.transl = $1.transl + $3.transl;
+					
+					if ($1.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $1.label + ";\n";
+						
+						$1.label = var1;
+					}
+					
+					if ($3.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $3.label + "\n";
+						
+						$3.label = var1;
+					}
+				
+					$$.type = "bool";
+					decls.push_back("\tint " + var + ";");
 					$$.transl = $1.transl + $3.transl + 
 						"\t" + var + " = " + $1.label + " == " + $3.label + ";\n";
 					$$.label = var;
 				} else {
-					// throw compile error
+					// throw compiler error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
 			}
 			| EXPR "!=" EXPR {
 				string var = getNextVar();
-				
 				string resType = opMap[$1.type + "!=" + $3.type];
-				$$.type = opMap[$1.type + "!=" + $3.type];
-				$$.transl = $1.transl + $3.transl + 
-					"\t" + $$.type + " " + var + " = " + $1.label + " != " + $3.label + ";\n";
-				$$.label = var;
 				
 				if (resType.size()) {
-					$$.type = resType;
-					decls.push_back("\t" + $$.type + " " + var + ";");
+					$$.transl = $1.transl + $3.transl;
+					
+					if ($1.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $1.label + ";\n";
+						
+						$1.label = var1;
+					}
+					
+					if ($3.type != resType) {
+						string var1 = getNextVar();
+						decls.push_back("\t" + resType + " " + var1 + ";");
+						$$.transl += "\t" + var1 + " = (" + 
+							resType + ") " + $3.label + "\n";
+						
+						$3.label = var1;
+					}
+				
+					$$.type = "bool";
+					decls.push_back("\tint " + var + ";");
 					$$.transl = $1.transl + $3.transl + 
-						"\t" + var + " = " + $1.label + " != " + $3.label + ";\n";
+						"\t" + var + " = " + $1.label + " !== " + $3.label + ";\n";
 					$$.label = var;
 				} else {
-					// throw compile error
+					// throw compiler error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
@@ -501,7 +681,7 @@ VALUE		: TK_NUM {
 				
 				$1.label = ($1.label == "true"? "1" : "0");
 				
-				decls.push_back("\t" + $1.type + " " + var + ";");
+				decls.push_back("\tint " + var + ";");
 				$$.transl = "\t" + var + " = " + value + ";\n";
 				$$.label = var;
 			}
@@ -561,4 +741,12 @@ void yyerror( string MSG ) {
 
 string getNextVar() {
     return "t" + to_string(tempGen++);
+}
+
+string getBeginLabel() {
+	return "BEGIN" + to_string(beginGen++);
+}
+
+string getEndLabel() {
+	return "END" + to_string(endGen++);
 }
