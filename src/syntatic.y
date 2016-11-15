@@ -14,6 +14,7 @@ struct attributes {
 	string label; // nome da variável usada no cód. intermediário (ex: "t0")
 	string type; // tipo no código intermediário (ex: "int")
 	string transl; // código intermediário (ex: "int t11 = 1;")
+	string endif;
 };
 
 typedef struct var_info {
@@ -35,6 +36,13 @@ int endGen = 0;
 string getNextVar();
 string getBeginLabel();
 string getEndLabel();
+string getCurrentEndLabel();
+
+void pushContext();
+void popContext();
+
+var_info* findVar(string label);
+void insertVar(string label, var_info info);
 
 int yylex(void);
 void yyerror(string);
@@ -54,8 +62,12 @@ void yyerror(string);
 %token TK_DIFFERENCE "!="
 %token TK_EQUAL "=="
 %token TK_IF "if"
+%token TK_ELIF "elif"
+%token TK_ELSE "else"
 %token TK_WHILE "while"
 %token TK_DO "do"
+%token TK_PRINT "print"
+%token TK_ENDL "endl"
 
 %start S
 
@@ -63,6 +75,7 @@ void yyerror(string);
 %left '+' '-'
 %left '*' '/'
 %left "and" "or" "not"
+%left "if" "elif" "else"
 
 %%
 
@@ -82,8 +95,10 @@ S 			: TK_INT_TYPE TK_MAIN '(' ')' BLOCK {
 				$5.transl << 
 				"\treturn 0;\n}" << endl;
 			};
+			
 
-BLOCK		: '{' STATEMENTS '}' {
+
+BLOCK		:  '{' STATEMENTS '}' {
 				$$.transl = $2.transl;
 			};
 
@@ -102,55 +117,113 @@ STATEMENT 	: EXPR ';' {
 			}
 			| CONDITIONAL {
 				$$.transl = $1.transl;
-			};
+			}
+			| PRINT ';' {
+				$$.transl = $1.transl;
+			}
+			| { $$.transl = ""; }
+			;
 
 CONDITIONAL: "if" '(' EXPR ')' BLOCK {
 				if($3.type == "bool"){
 					string end = getEndLabel();
+					string var = getNextVar();
+					
+					decls.push_back("\tint " + var + ";");
 					
 					$$.transl = $3.transl + 
-						"\t" + $3.label + " = !" + $3.label + ";\n" +
-						"\tif (" + $3.label + ") goto " + end + ";\n" +
+						"\t" + var + " = !" + $3.label + ";\n" +
+						"\tif (" + var + ") goto " + end + ";\n" +
 						$5.transl +
 						"\t" + end + ":";
 				}else{
 					// throw compile error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
+				}
+			}
+			| "if" '(' EXPR ')' BLOCK ELSE {
+				if ($3.type == "bool") {
+					string var = getNextVar();
+					string endif = getEndLabel();
+					
+					decls.push_back("\tint " + var + ";");
+					
+					$$.transl = $3.transl + 
+						"\t" + var + " = !" + $3.label + ";\n" +
+						"\tif (" + var + ") goto " + endif + ";\n" +
+						$5.transl +
+						$6.transl;
+					
+				} else {
+					// throw compile error
+					yyerror("Condicional não é um booleano");
 				}
 			}
 			| "while" '(' EXPR ')' BLOCK {
 				if($3.type == "bool"){
+					string var = getNextVar();
 					string begin = getBeginLabel();
 					string end = getEndLabel();
 					
+					decls.push_back("\tint " + var + ";");
+					
 					$$.transl = $3.transl + 
-						"\t" + $3.label + " = !" + $3.label + ";\n" +
-						begin + ":\tif (" + $3.label + ") goto " + end + ";\n" +
+						//"\t" + $3.label + " = !" + $3.label + ";\n" +
+						begin + ":\t" + var + " = !" + $3.label + ";\n" + 
+						"\tif (" + var + ") goto " + end + ";\n" +
 						$5.transl +
 						"\tgoto " + begin + ";\n" +
-						"\t" + end + ":";
+						"\t" + end + ":\n";
 				}else{
 					// throw compile error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
 			}
-		| "do" BLOCK "while" '(' EXPR ')' ';' {
+			| "do" BLOCK "while" '(' EXPR ')' ';' {
 				if($5.type == "bool"){
 					string begin = getBeginLabel();
 					string end = getEndLabel();
+					string var = getNextVar();
 					
-					$$.transl = $5.transl + 
-						"\t" + begin + ":\n" +
+					decls.push_back("\tint " + var + ";");
+					
+					$$.transl = $5.transl +
+						"\t" + begin + ":\t" + var + " = !" + $5.label + ";\n" + 
+						//"\t" + begin + ":\n" +
 						$2.transl +
-						"\tif (" + $5.label + ") goto " + begin + ";\n";
+						"\tif (" + var + ") goto " + begin + ";\n";
 				}else{
 					// throw compile error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
 			};
+			
+ELSE		: "else" BLOCK {
+				
+				string endelse = getEndLabel();
+				string endif = getCurrentEndLabel();
+				
+				$$.transl = $2.transl + 
+					"\tgoto " + endelse + ";\n" +
+						endif + ":" + $2.transl +
+						"\n" + endelse + ":";
+			};
+		
+PRINT		: "print" PRINT_ARGS {
+				$$.transl = "\tstd::cout" + $2.transl + ";\n";
+			};
+		
+PRINT_ARGS	: PRINT_ARG PRINT_ARGS {
+				$$.transl = $1.transl + $2.transl;
+			}
+			| PRINT_ARG { $$.transl = $1.transl; };
+			
+PRINT_ARG	: EXPR { $$.transl = " << " + $1.label; }
+			| TK_ENDL { $$.transl = " << std::endl"; }
+			;
 			
 ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				if (!varMap.count($2.label)) {
@@ -644,6 +717,7 @@ EXPR 		: EXPR '+' EXPR {
 				$$.type = $1.type;
 			};
 			
+			
 TYPE		: TK_INT_TYPE
 			| TK_FLOAT_TYPE
 			| TK_DOUBLE_TYPE
@@ -749,4 +823,8 @@ string getBeginLabel() {
 
 string getEndLabel() {
 	return "END" + to_string(endGen++);
+}
+
+string getCurrentEndLabel(){
+	return "END" + to_string(endGen);
 }

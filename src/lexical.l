@@ -72,7 +72,11 @@ COMML	    "//".*\n
 "or"        { return TK_OR; }
 "not"        { return TK_NOT; }
 
+"print"     { return TK_PRINT; }
+"endl"      { return TK_ENDL; }
+
 "if"        { return TK_IF; }
+"else"      { return TK_ELSE; }
 "while"     { return TK_WHILE; }
 "do"        { return TK_DO; }
 
