@@ -66,6 +66,7 @@ void yyerror(string);
 %token TK_ELSE "else"
 %token TK_WHILE "while"
 %token TK_DO "do"
+%token TK_FOR "for"
 %token TK_PRINT "print"
 %token TK_ENDL "endl"
 
@@ -124,7 +125,7 @@ STATEMENT 	: EXPR ';' {
 			| { $$.transl = ""; }
 			;
 
-CONDITIONAL: "if" '(' EXPR ')' BLOCK {
+CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 				if($3.type == "bool"){
 					string end = getEndLabel();
 					string var = getNextVar();
@@ -176,9 +177,7 @@ CONDITIONAL: "if" '(' EXPR ')' BLOCK {
 						"\tgoto " + begin + ";\n" +
 						"\t" + end + ":\n";
 				}else{
-					// throw compile error
-					$$.type = "ERROR";
-					$$.transl = "ERROR";
+					yyerror("Variável " + $3.label + "com o tipo " + $3.type + "não é booleano\n");
 				}
 			}
 			| "do" BLOCK "while" '(' EXPR ')' ';' {
@@ -198,6 +197,26 @@ CONDITIONAL: "if" '(' EXPR ')' BLOCK {
 					// throw compile error
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
+				}
+			}
+			| "for" '(' ATTRIBUTION  EXPR  ATTRIBUTION ')' BLOCK {
+				if($4.type == "bool"){
+					string var = getNextVar();
+					string begin = getBeginLabel();
+					string end = getEndLabel();
+					
+					decls.push_back("\tint " + var + ";");
+					
+					$$.transl = $3.transl + "\n" +
+					begin + ":"  +
+					$4.transl + "\t" + var + "= !" + $4.label + ";\n" +
+					"\tif " + '(' + var + ") goto " + end + ";\n" +
+					$7.transl + 
+					$5.transl +
+					"\tgoto " + begin + ";\n" +
+					"\t" + end + ":\n";
+				}else{
+					yyerror("Variável " + $4.label + "com o tipo " + $4.type + "não é booleano\n");
 				}
 			};
 			
