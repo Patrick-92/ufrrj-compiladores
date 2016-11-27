@@ -27,7 +27,7 @@ ifstream opMapFile, padraoMapFile;
 
 vector<string> decls;
 map<string, string> opMap;
-map<string, var_info> varMap;
+vector<map<string, var_info>> varMap;
 map<string, string> padraoMap;
 int tempGen = 0;
 int beginGen = 0;
@@ -76,7 +76,7 @@ void yyerror(string);
 %left '+' '-'
 %left '*' '/'
 %left "and" "or" "not"
-%left "if" "elif" "else"
+%left "if" "elif" "else" "for"
 
 %%
 
@@ -97,10 +97,22 @@ S 			: TK_INT_TYPE TK_MAIN '(' ')' BLOCK {
 				"\treturn 0;\n}" << endl;
 			};
 			
+PUSH_SCOPE: {
+				pushContext();
+				
+				$$.transl = "";
+				$$.label = "";
+			}
+			
+POP_SCOPE:	{
+				popContext();
+				
+				$$.transl = "";
+				$$.label = "";
+			}
 
-
-BLOCK		:  '{' STATEMENTS '}' {
-				$$.transl = $2.transl;
+BLOCK		:  PUSH_SCOPE '{' STATEMENTS '}' POP_SCOPE {
+				$$.transl = $3.transl;
 			};
 
 STATEMENTS	: STATEMENT STATEMENTS {
@@ -199,24 +211,24 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 					$$.transl = "ERROR";
 				}
 			}
-			| "for" '(' ATTRIBUTION  EXPR  ATTRIBUTION ')' BLOCK {
-				if($4.type == "bool"){
+			| "for" '(' PUSH_SCOPE ATTRIBUTION  EXPR  ATTRIBUTION ')' BLOCK POP_SCOPE {
+				if($5.type == "bool"){
 					string var = getNextVar();
 					string begin = getBeginLabel();
 					string end = getEndLabel();
 					
 					decls.push_back("\tint " + var + ";");
 					
-					$$.transl = $3.transl + "\n" +
+					$$.transl = $4.transl + "\n" +
 					begin + ":"  +
-					$4.transl + "\t" + var + "= !" + $4.label + ";\n" +
+					$5.transl + "\t" + var + "= !" + $5.label + ";\n" +
 					"\tif " + '(' + var + ") goto " + end + ";\n" +
-					$7.transl + 
-					$5.transl +
+					$8.transl + 
+					$6.transl +
 					"\tgoto " + begin + ";\n" +
 					"\t" + end + ":\n";
 				}else{
-					yyerror("Variável " + $4.label + "com o tipo " + $4.type + "não é booleano\n");
+					yyerror("Variável " + $5.label + " com o tipo " + $5.type + " não é booleano\n");
 				}
 			};
 			
@@ -245,11 +257,13 @@ PRINT_ARG	: EXPR { $$.transl = " << " + $1.label; }
 			;
 			
 ATTRIBUTION	: TYPE TK_ID '=' EXPR {
-				if (!varMap.count($2.label)) {
+				var_info* info = findVar($2.label);
+	
+				if (info == nullptr) {
 					if ($4.type == $1.transl) {
 						$$.transl = $4.transl;
 						
-						varMap[$2.label] = {$1.transl, $4.label};
+						insertVar($2.label, {$1.transl, $4.label});
 					} else {
 						// throw compile error
 						$$.type = "ERROR";
@@ -262,27 +276,25 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				}
 			}
 			| TK_ID '=' EXPR {
-				if (varMap.count($1.label)) {
-					var_info info = varMap[$1.label];
-					
+				var_info* info = findVar($1.label);
+				
+				if (info != nullptr) {
 					// se tipo da expr for igual a do id
-					if (info.type == $3.type) {
-						varMap[$1.label] = {info.type, $3.label};
+					if (info->type == $3.type) {
 						$$.type = $3.type;
-						$$.transl = $3.transl;
+						$$.transl = $3.transl + "\t" + info->name + " = " + $3.label + ";\n";
 						$$.label = $3.label;
 					} else {
 						string var = getNextVar();
-						string resType = opMap[info.type + "=" + $3.type];
+						string resType = opMap[info->type + "=" + $3.type];
 						
 						// se conversão é permitida
 						if (resType.size()) {
-							$$.transl = $3.transl + "\t" + info.type + " " + 
-								var + " = (" + info.type + ") " + $3.label + ";\n";
-							$$.type = info.type;
+							$$.transl = $3.transl + "\t" + info->type + " " + 
+								var + " = (" + info->type + ") " + $3.label + ";\n\t" +
+								info->name + " = " + var + ";\n";
+							$$.type = info->type;
 							$$.label = var;
-							
-							varMap[$1.label] = {info.type, var};
 						} else {
 							// throw compile error
 							$$.type = "ERROR";
@@ -296,10 +308,12 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				}
 			}
 			| TYPE TK_ID {
-				if (!varMap.count($2.label)) {
+				var_info* info = findVar($2.label);
+				
+				if (info == nullptr) {
 					string var = getNextVar();
 					
-					varMap[$2.label] = {$1.transl, var};
+					insertVar($2.label, {$1.transl, var});
 					
 					$$.transl = "\t" + $1.transl + " " + $2.label + " = " + 
 						padraoMap[$1.transl] + ";\n";
@@ -779,11 +793,11 @@ VALUE		: TK_NUM {
 				$$.label = var;
 			}
 			| TK_ID {
-				var_info varInfo = varMap[$1.label];
+				var_info* varInfo = findVar($1.label);
 				
-				if (varInfo.name.size()) {
-					$$.type = varInfo.type;
-					$$.label = varInfo.name;
+				if (varInfo != nullptr) {
+					$$.type = varInfo->type;
+					$$.label = varInfo->name;
 					$$.transl = "";
 				} else {
 					// throw compile error
@@ -846,4 +860,27 @@ string getEndLabel() {
 
 string getCurrentEndLabel(){
 	return "END" + to_string(endGen);
+}
+
+var_info* findVar(string label) {
+	for (int i = varMap.size() - 1; i >= 0; i--) {
+		if (varMap[i].count(label)) {
+			return &varMap[i][label];
+		}
+	}
+	
+	return nullptr;
+}
+
+void insertVar(string label, var_info info) {
+	varMap[varMap.size() - 1][label] = info;
+}
+
+void pushContext() {
+	map<string, var_info> newContext;
+	varMap.push_back(newContext);
+}
+
+void popContext() {
+	varMap.pop_back();
 }
