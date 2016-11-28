@@ -128,6 +128,9 @@ STATEMENT 	: EXPR ';' {
 			| ATTRIBUTION ';' {
 				$$.transl = $1.transl;
 			}
+			| DECLARATION ';' {
+				$$.transl = $1.transl;
+			}
 			| CONDITIONAL {
 				$$.transl = $1.transl;
 			}
@@ -306,8 +309,9 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
-			}
-			| TYPE TK_ID {
+			};
+
+DECLARATION : TYPE TK_ID {
 				var_info* info = findVar($2.label);
 				
 				if (info == nullptr) {
