@@ -3,7 +3,7 @@ Especificações:
 
 Obrigatórios:
 Declaração Explícita - (X)
-Escopo estático - ()
+Escopo estático - (X)
 Blocos- (X) (verificar)
 Escopo global- (X) (verificar)
 Tipo de dados primitivos (int, float, boolean, string e char) - (X)
@@ -14,8 +14,8 @@ Inicialização de Matrizes - ()
 Expressões - (X)
 Expressões Condicionais - ()
 Comandos de Entrada e Saída
-Comandos de Laço (for, while e do/while) - ()
-Comandos de Decisão (if, if/else e switch) - ()
+Comandos de Laço (for, while e do/while) - (X)
+Comandos de Decisão (if, if/else e switch) - (falta switch)
 Operadores Aritméticos - (X)
 Operadores Relacionais (gerando boolean) - (X)
 Operadores Lógicos (gerando boolean) - (X)

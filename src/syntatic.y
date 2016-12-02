@@ -329,8 +329,10 @@ DECLARATION : TYPE TK_ID {
 					
 					insertVar($2.label, {$1.transl, var});
 					
-					//$$.transl = "\t" + $1.transl + " " + $2.label + " = " +
-					$$.transl = "\t" + $1.transl + " " + var + " = " + 
+					decls.push_back("\t" + $1.transl + " " + var + ";");
+					
+					// tá inserindo o tipo \/ ($1.transl): tirar!
+					$$.transl = "\t" + var + " = " + 
 						padraoMap[$1.transl] + ";\n";
 					$$.label = var;
 					$$.type = $1.transl;
