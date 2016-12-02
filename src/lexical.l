@@ -79,7 +79,10 @@ COMML	    "//".*\n
 "else"      { return TK_ELSE; }
 "while"     { return TK_WHILE; }
 "do"        { return TK_DO; }
-"for"        { return TK_FOR; }
+"for"       { return TK_FOR; }
+
+"icmt"      { return TK_INCREMENT; }
+"dcmt"      { return TK_DECREMENT; }
 
 {INT}		{
     yylval.transl = "";

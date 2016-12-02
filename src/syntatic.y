@@ -69,12 +69,15 @@ void yyerror(string);
 %token TK_FOR "for"
 %token TK_PRINT "print"
 %token TK_ENDL "endl"
+%token TK_INCREMENT "icmt"
+%token TK_DECREMENT "dcmt"
 
 %start S
 
 %left '<' '>' "<=" ">=" "!=" "=="
-%left '+' '-'
 %left '*' '/'
+%left '+' '-'
+%left "icmt" "dcmt"
 %left "and" "or" "not"
 %left "if" "elif" "else" "for"
 
@@ -125,10 +128,10 @@ STATEMENTS	: STATEMENT STATEMENTS {
 STATEMENT 	: EXPR ';' {
 				$$.transl = $1.transl;
 			}
-			| ATTRIBUTION ';' {
+			| DECLARATION ';' {
 				$$.transl = $1.transl;
 			}
-			| DECLARATION ';' {
+			| ATTRIBUTION ';' {
 				$$.transl = $1.transl;
 			}
 			| CONDITIONAL {
@@ -309,7 +312,14 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
-			};
+			}
+			| INCREMENT {
+				$$.transl = $1.transl;
+			}
+			| DECREMENT {
+				$$.transl = $1.transl;
+			}
+			;
 
 DECLARATION : TYPE TK_ID {
 				var_info* info = findVar($2.label);
@@ -319,7 +329,8 @@ DECLARATION : TYPE TK_ID {
 					
 					insertVar($2.label, {$1.transl, var});
 					
-					$$.transl = "\t" + $1.transl + " " + $2.label + " = " + 
+					//$$.transl = "\t" + $1.transl + " " + $2.label + " = " +
+					$$.transl = "\t" + $1.transl + " " + var + " = " + 
 						padraoMap[$1.transl] + ";\n";
 					$$.label = var;
 					$$.type = $1.transl;
@@ -329,6 +340,42 @@ DECLARATION : TYPE TK_ID {
 					$$.transl = "ERROR";
 				}
 			};
+			
+INCREMENT	: "icmt" TK_ID {
+				var_info* info = findVar($2.label);
+				
+				if (info != nullptr){
+					if (info->type == "int"){
+						$$.label = info->name;
+						$$.type = info->type;
+						$$.transl = 
+						"\t" + info->name + " = " + info->name + " + 1;\n";
+					}else{
+						yyerror("Tipo da variável " + $2.label + " não é inteiro !");
+					}
+				}else{
+					yyerror("Variável" + $2.label + " inexistente !");
+				}
+			}
+			;
+			
+DECREMENT	: "dcmt" TK_ID {
+				var_info* info = findVar($2.label);
+				
+				if (info != nullptr){
+					if (info->type == "int"){
+						$$.label = info->name;
+						$$.type = info->type;
+						$$.transl =
+						"\t" + info->name + " = " + info->name + " - 1;\n";
+					}else{
+						yyerror("Tipo da variável " + $2.label + " não é inteiro !");
+					}
+				}else{
+					yyerror("Variável" + $2.label + " inexistente !");
+				}
+			}
+			;
 
 EXPR 		: EXPR '+' EXPR {
 				string var = getNextVar();
