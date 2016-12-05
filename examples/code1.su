@@ -11,4 +11,12 @@ int main() {
 	icmt i;
 	
 	i icmt;
+
+	i += 1;
+	
+	i -= 1;
+	
+	i *= 1;
+	
+	i /= 1;
 }

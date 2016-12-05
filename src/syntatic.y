@@ -71,6 +71,10 @@ void yyerror(string);
 %token TK_ENDL "endl"
 %token TK_INCREMENT "icmt"
 %token TK_DECREMENT "dcmt"
+%token TK_OPCOMPOUND_MORE_EQUAL "+="
+%token TK_OPCOMPOUND_LESS_EQUAL "-="
+%token TK_OPCOMPOUND_MULTIPLY_EQUAL "*="
+%token TK_OPCOMPOUND_DIVIDE_EQUAL "/="
 
 %start S
 
@@ -78,6 +82,7 @@ void yyerror(string);
 %left '*' '/'
 %left '+' '-'
 %left "icmt" "dcmt"
+%left "+=" "-=" "*=" "/="
 %left "and" "or" "not"
 %left "if" "elif" "else" "for"
 
@@ -319,6 +324,9 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 			| DECREMENT {
 				$$.transl = $1.transl;
 			}
+			| OP_COMPOUND {
+				$$.transl = $1.transl;
+			}
 			;
 
 DECLARATION : TYPE TK_ID {
@@ -360,7 +368,7 @@ INCREMENT	: "icmt" TK_ID {
 				}
 			}
 			| TK_ID "icmt" {
-				var_info* info = findVar($2.label);
+				var_info* info = findVar($1.label);
 				
 				if(info != nullptr){
 					if(info->type == "int"){
@@ -398,7 +406,7 @@ DECREMENT	: "dcmt" TK_ID {
 				}
 			}
 			| TK_ID "dcmt" {
-				var_info* info = findVar($2.label);
+				var_info* info = findVar($1.label);
 				
 				if(info != nullptr){
 					if(info->type == "int"){
@@ -415,6 +423,72 @@ DECREMENT	: "dcmt" TK_ID {
 					}
 				}else{
 					yyerror("Variável" + $2.label + " inexistente !");
+				}
+			}
+			;
+			
+OP_COMPOUND : TK_ID "+=" TK_NUM {
+				var_info* info = findVar($1.label);
+				
+				if(info != nullptr){
+					if(info->type == $3.type){
+						$$.type = info->type;
+						$$.label = info->name;
+						$$.transl = $1.transl + $3.transl +
+						"\t" + info->name + " = " + info->name + " + " + $3.label + ";\n";
+					}else{
+						yyerror("Tipo da variável " + $1.label + " diferente do valor '" + $3.label + "' acrescido!");
+					}
+				}else{
+					yyerror("Variável" + $1.label + " inexistente !");
+				}
+			}
+			| TK_ID "-=" TK_NUM {
+				var_info* info = findVar($1.label);
+				
+				if(info != nullptr){
+					if(info->type == $3.type){
+						$$.type = info->type;
+						$$.label = info->name;
+						$$.transl = $1.transl + $3.transl +
+						"\t" + info->name + " = " + info->name + " - " + $3.label + ";\n";
+					}else{
+						yyerror("Tipo da variável " + $1.label + " diferente do valor '" + $3.label + "' acrescido!");
+					}
+				}else{
+					yyerror("Variável" + $1.label + " inexistente !");
+				}
+			}
+			| TK_ID "*=" TK_NUM {
+				var_info* info = findVar($1.label);
+				
+				if(info != nullptr){
+					if(info->type == $3.type){
+						$$.type = info->type;
+						$$.label = info->name;
+						$$.transl = $1.transl + $3.transl +
+						"\t" + info->name + " = " + info->name + " * " + $3.label + ";\n";
+					}else{
+						yyerror("Tipo da variável " + $1.label + " diferente do valor '" + $3.label + "' acrescido!");
+					}
+				}else{
+					yyerror("Variável" + $1.label + " inexistente !");
+				}
+			}
+			| TK_ID "/=" TK_NUM {
+				var_info* info = findVar($1.label);
+				
+				if(info != nullptr){
+					if(info->type == $3.type){
+						$$.type = info->type;
+						$$.label = info->name;
+						$$.transl = $1.transl + $3.transl +
+						"\t" + info->name + " = " + info->name + " / " + $3.label + ";\n";
+					}else{
+						yyerror("Tipo da variável " + $1.label + " diferente do valor '" + $3.label + "' acrescido!");
+					}
+				}else{
+					yyerror("Variável" + $1.label + " inexistente !");
 				}
 			}
 			;

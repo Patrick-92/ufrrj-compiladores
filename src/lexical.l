@@ -70,7 +70,12 @@ COMML	    "//".*\n
 "<="        { return TK_LTE; }
 "and"       { return TK_AND; }
 "or"        { return TK_OR; }
-"not"        { return TK_NOT; }
+"not"       { return TK_NOT; }
+
+"+="        { return TK_OPCOMPOUND_MORE_EQUAL; }
+"-="        { return TK_OPCOMPOUND_LESS_EQUAL; }
+"*="        { return TK_OPCOMPOUND_MULTIPLY_EQUAL; }
+"/="        { return TK_OPCOMPOUND_DIVIDE_EQUAL; }
 
 "print"     { return TK_PRINT; }
 "endl"      { return TK_ENDL; }
