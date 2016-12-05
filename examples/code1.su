@@ -9,4 +9,6 @@ int main() {
 	}
 	
 	icmt i;
+	
+	i icmt;
 }

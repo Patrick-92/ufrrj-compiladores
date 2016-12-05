@@ -359,6 +359,26 @@ INCREMENT	: "icmt" TK_ID {
 					yyerror("Variável" + $2.label + " inexistente !");
 				}
 			}
+			| TK_ID "icmt" {
+				var_info* info = findVar($2.label);
+				
+				if(info != nullptr){
+					if(info->type == "int"){
+						string var = getNextVar();
+						
+						decls.push_back("\tint " + var + ";");
+						
+						$$.label = info->name;
+						$$.type = info->type;
+						$$.transl = "\t" + var + " = " + info->name + " + 1;\n" +
+						"\t" + info->name + " = " + var + ";\n";
+					}else{
+						yyerror("Tipo da variável " + $2.label + " não é inteiro !");
+					}
+				}else{
+					yyerror("Variável" + $2.label + " inexistente !");
+				}
+			}
 			;
 			
 DECREMENT	: "dcmt" TK_ID {
@@ -370,6 +390,26 @@ DECREMENT	: "dcmt" TK_ID {
 						$$.type = info->type;
 						$$.transl =
 						"\t" + info->name + " = " + info->name + " - 1;\n";
+					}else{
+						yyerror("Tipo da variável " + $2.label + " não é inteiro !");
+					}
+				}else{
+					yyerror("Variável" + $2.label + " inexistente !");
+				}
+			}
+			| TK_ID "dcmt" {
+				var_info* info = findVar($2.label);
+				
+				if(info != nullptr){
+					if(info->type == "int"){
+						string var = getNextVar();
+						
+						decls.push_back("\tint " + var + ";");
+						
+						$$.label = info->name;
+						$$.type = info->type;
+						$$.transl = "\t" + var + " = " + info->name + " - 1;\n" +
+						"\t" + info->name + " = " + var + ";\n";
 					}else{
 						yyerror("Tipo da variável " + $2.label + " não é inteiro !");
 					}
