@@ -35,7 +35,7 @@ int endGen = 0;
 
 string getNextVar();
 string getBeginLabel();
-string getBeginLabelCurrent();
+string getCurrentBeginLabel();
 string getEndLabel();
 string getCurrentEndLabel();
 
@@ -78,6 +78,7 @@ void yyerror(string);
 %token TK_OPCOMPOUND_DIVIDE_EQUAL "/="
 %token TK_QUESTION "?"
 %token TK_CONTINUE "continue"
+%token TK_BREAK_LOOP "break"
 
 %start S
 
@@ -87,7 +88,7 @@ void yyerror(string);
 %left "icmt" "dcmt"
 %left "+=" "-=" "*=" "/="
 %left "and" "or" "not"
-%left "continue"
+%left "continue" "break"
 %left "if" "elif" "else" "for"
 
 %%
@@ -265,9 +266,14 @@ ELSE		: "else" BLOCK {
 			};
 			
 LOOP_CONTROL_MECHANISMS : "continue" {
-				string begin = getBeginLabelCurrent();
-				$$.transl = "\tgoto " + begin + ";\n";
-			};
+							string begin = getCurrentBeginLabel();
+							$$.transl = "\tgoto " + begin + ";\n";
+						}
+						| "break" {
+							string end = getCurrentEndLabel();
+							$$.transl = "\tgoto " + end + ";\n";
+						}
+						;
 		
 PRINT		: "print" PRINT_ARGS {
 				$$.transl = "\tstd::cout" + $2.transl + ";\n";
@@ -1065,7 +1071,7 @@ string getBeginLabel() {
 	return "BEGIN" + to_string(beginGen++);
 }
 
-string getBeginLabelCurrent() {
+string getCurrentBeginLabel() {
 	return "BEGIN" + to_string(beginGen);
 }
 

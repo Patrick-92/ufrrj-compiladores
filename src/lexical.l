@@ -87,7 +87,7 @@ COMML	    "//".*\n
 "do"        { return TK_DO; }
 "for"       { return TK_FOR; }
 "continue"  { return TK_CONTINUE; }
-"break"     { return TK_BREAK; }
+"break"     { return TK_BREAK_LOOP; }
 
 "icmt"      { return TK_INCREMENT; }
 "dcmt"      { return TK_DECREMENT; }

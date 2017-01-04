@@ -7,6 +7,7 @@ int main() {
 		kk = kk + 1) {
 		int f = 0;
 		continue;
+		break;
 	}
 	
 	icmt i;
