@@ -75,6 +75,7 @@ void yyerror(string);
 %token TK_OPCOMPOUND_LESS_EQUAL "-="
 %token TK_OPCOMPOUND_MULTIPLY_EQUAL "*="
 %token TK_OPCOMPOUND_DIVIDE_EQUAL "/="
+%token TK_QUESTION "?"
 
 %start S
 
@@ -137,6 +138,9 @@ STATEMENT 	: EXPR ';' {
 				$$.transl = $1.transl;
 			}
 			| ATTRIBUTION ';' {
+				$$.transl = $1.transl;
+			}
+			| ATTRIBUTION_CONDITIONAL ';' {
 				$$.transl = $1.transl;
 			}
 			| CONDITIONAL {
@@ -328,6 +332,35 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				$$.transl = $1.transl;
 			}
 			;
+			
+ATTRIBUTION_CONDITIONAL : TK_ID '=' '(' EXPR ')' "?" TK_ID TK_ID {
+				var_info* info = findVar($1.label);
+				var_info* info2 = findVar($7.label);
+				var_info* info3 = findVar($8.label);
+				
+				if($4.type == "bool"){
+					if(info != nullptr && info2 != nullptr && info3 != nullptr){
+						string var = getNextVar();
+						string endif = getEndLabel();
+						string endelse = getEndLabel();
+						
+						decls.push_back("\tint " + var + ";");
+						
+						$$.transl = $4.transl +
+						"\t" + var + " = !" + $4.label + ";\n" +
+						"\tif (" + var + ") goto " + endif + ";\n" +
+						"\t" + info->name + " = " + info2->name + ";\n" +
+						"\tgoto " + endelse + ";\n" +
+						"\t" + endif + ":" +
+						"\t" + info->name + " = " + info3->name + ";\n" +
+						"\t" + endelse + ":\n";
+					} else {
+						yyerror("Variável " + $1.label + ", ou " + $7.label = ", ou " + $8.label + " inexistente !");
+					}
+				} else {
+					yyerror("Expressão condicional não retorna valor booleano !");
+				}
+			};
 
 DECLARATION : TYPE TK_ID {
 				var_info* info = findVar($2.label);

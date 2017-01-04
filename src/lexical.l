@@ -76,6 +76,7 @@ COMML	    "//".*\n
 "-="        { return TK_OPCOMPOUND_LESS_EQUAL; }
 "*="        { return TK_OPCOMPOUND_MULTIPLY_EQUAL; }
 "/="        { return TK_OPCOMPOUND_DIVIDE_EQUAL; }
+"?"        { return TK_QUESTION; }
 
 "print"     { return TK_PRINT; }
 "endl"      { return TK_ENDL; }

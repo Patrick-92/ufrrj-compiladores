@@ -19,4 +19,11 @@ int main() {
 	i *= 1;
 	
 	i /= 1;
+
+	int a;
+	int b;
+	int z;
+	
+	z = (a>b) ? a b;
+	
 }
