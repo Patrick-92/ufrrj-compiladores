@@ -32,12 +32,19 @@ map<string, string> padraoMap;
 int tempGen = 0;
 int beginGen = 0;
 int endGen = 0;
+int endGenLoop = 0;
+bool openBlock = true;
 
 string getNextVar();
 string getBeginLabel();
 string getCurrentBeginLabel();
 string getEndLabel();
+string getEndLabelLoop();
 string getCurrentEndLabel();
+string getCurrentEndLabelLoop();
+void trueFlagOpenBlock();
+void falseFlagOpenBlock();
+bool getFlagOpenBlock();
 
 void pushContext();
 void popContext();
@@ -199,7 +206,7 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 				if($3.type == "bool"){
 					string var = getNextVar();
 					string begin = getBeginLabel();
-					string end = getEndLabel();
+					string end = getEndLabelLoop();
 					
 					decls.push_back("\tint " + var + ";");
 					
@@ -217,7 +224,7 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 			| "do" BLOCK "while" '(' EXPR ')' ';' {
 				if($5.type == "bool"){
 					string begin = getBeginLabel();
-					string end = getEndLabel();
+					string end = getEndLabelLoop();
 					string var = getNextVar();
 					
 					decls.push_back("\tint " + var + ";");
@@ -237,7 +244,7 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 				if($5.type == "bool"){
 					string var = getNextVar();
 					string begin = getBeginLabel();
-					string end = getEndLabel();
+					string end = getEndLabelLoop();
 					
 					decls.push_back("\tint " + var + ";");
 					
@@ -249,6 +256,7 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 					$6.transl +
 					"\tgoto " + begin + ";\n" +
 					"\t" + end + ":\n";
+					
 				}else{
 					yyerror("Variável " + $5.label + " com o tipo " + $5.type + " não é booleano\n");
 				}
@@ -266,12 +274,24 @@ ELSE		: "else" BLOCK {
 			};
 			
 LOOP_CONTROL_MECHANISMS : "continue" {
-							string begin = getCurrentBeginLabel();
-							$$.transl = "\tgoto " + begin + ";\n";
+							bool flag = getFlagOpenBlock();
+							
+							if(flag == true){
+								string begin = getCurrentBeginLabel();
+								$$.transl = "\tgoto " + begin + ";\n";	
+							} else {
+								yyerror("Mecanismo de controle de laço (continue) fora de um laço!");
+							}
 						}
 						| "break" {
-							string end = getCurrentEndLabel();
-							$$.transl = "\tgoto " + end + ";\n";
+							bool flag = getFlagOpenBlock();
+							
+							if(flag == true){
+								string end = getCurrentEndLabelLoop();
+								$$.transl = "\tgoto " + end + ";\n";
+							} else {
+								yyerror("Mecanismo de controle de laço (break) fora de um laço!");
+							}
 						}
 						;
 		
@@ -1079,8 +1099,28 @@ string getEndLabel() {
 	return "END" + to_string(endGen++);
 }
 
-string getCurrentEndLabel(){
+string getEndLabelLoop() {
+	return "ENDLOOP" + to_string(endGenLoop++);
+}
+
+string getCurrentEndLabel() {
 	return "END" + to_string(endGen);
+}
+
+string getCurrentEndLabelLoop() {
+	return "ENDLOOP" + to_string(endGenLoop);
+}
+
+void trueFlagOpenBlock () {
+	openBlock = true;
+}
+
+void falseFlagOpenBlock () {
+	openBlock = false;
+}
+
+bool getFlagOpenBlock () {
+	return openBlock;
 }
 
 var_info* findVar(string label) {
