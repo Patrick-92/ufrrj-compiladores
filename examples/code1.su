@@ -6,6 +6,7 @@ int main() {
 		kk < 5 
 		kk = kk + 1) {
 		int f = 0;
+		continue;
 	}
 	
 	icmt i;

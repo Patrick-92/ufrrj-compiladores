@@ -35,6 +35,7 @@ int endGen = 0;
 
 string getNextVar();
 string getBeginLabel();
+string getBeginLabelCurrent();
 string getEndLabel();
 string getCurrentEndLabel();
 
@@ -76,6 +77,7 @@ void yyerror(string);
 %token TK_OPCOMPOUND_MULTIPLY_EQUAL "*="
 %token TK_OPCOMPOUND_DIVIDE_EQUAL "/="
 %token TK_QUESTION "?"
+%token TK_CONTINUE "continue"
 
 %start S
 
@@ -85,6 +87,7 @@ void yyerror(string);
 %left "icmt" "dcmt"
 %left "+=" "-=" "*=" "/="
 %left "and" "or" "not"
+%left "continue"
 %left "if" "elif" "else" "for"
 
 %%
@@ -144,6 +147,9 @@ STATEMENT 	: EXPR ';' {
 				$$.transl = $1.transl;
 			}
 			| CONDITIONAL {
+				$$.transl = $1.transl;
+			}
+			| LOOP_CONTROL_MECHANISMS ';' {
 				$$.transl = $1.transl;
 			}
 			| PRINT ';' {
@@ -256,6 +262,11 @@ ELSE		: "else" BLOCK {
 					"\tgoto " + endelse + ";\n" +
 						endif + ":" + $2.transl +
 						"\n" + endelse + ":";
+			};
+			
+LOOP_CONTROL_MECHANISMS : "continue" {
+				string begin = getBeginLabelCurrent();
+				$$.transl = "\tgoto " + begin + ";\n";
 			};
 		
 PRINT		: "print" PRINT_ARGS {
@@ -1052,6 +1063,10 @@ string getNextVar() {
 
 string getBeginLabel() {
 	return "BEGIN" + to_string(beginGen++);
+}
+
+string getBeginLabelCurrent() {
+	return "BEGIN" + to_string(beginGen);
 }
 
 string getEndLabel() {

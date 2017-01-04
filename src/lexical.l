@@ -86,6 +86,8 @@ COMML	    "//".*\n
 "while"     { return TK_WHILE; }
 "do"        { return TK_DO; }
 "for"       { return TK_FOR; }
+"continue"  { return TK_CONTINUE; }
+"break"     { return TK_BREAK; }
 
 "icmt"      { return TK_INCREMENT; }
 "dcmt"      { return TK_DECREMENT; }
