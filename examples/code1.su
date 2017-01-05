@@ -28,4 +28,11 @@ int main() {
 	
 	z = (a>b) ? a b;
 	
+	string t = 'teste';
+	
+	t = 'ab';
+	
+	string p = 'teste2';
+	
+	string teste3 = t + p;
 }

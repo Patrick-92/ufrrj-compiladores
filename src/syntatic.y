@@ -57,7 +57,7 @@ void yyerror(string);
 %}
 
 %token TK_PARAM
-%token TK_NUM TK_CHAR TK_BOOL
+%token TK_NUM TK_CHAR TK_STRING TK_BOOL
 %token TK_MAIN TK_ID TK_INT_TYPE TK_FLOAT_TYPE TK_CHAR_TYPE 
 %token TK_DOUBLE_TYPE TK_LONG_TYPE TK_STRING_TYPE TK_BOOL_TYPE
 %token TK_FIM TK_ERROR
@@ -1029,6 +1029,15 @@ VALUE		: TK_NUM {
 			}
 			| TK_CHAR {
 				string var = getNextVar();
+				string value = $1.label;
+				
+				decls.push_back("\t" + $1.type + " " + var + ";");
+				$$.transl = "\t" + var + " = " + value + ";\n";
+				$$.label = var;
+			}
+			| TK_STRING {
+				string var = getNextVar();
+				string value = $1.label;
 				
 				decls.push_back("\t" + $1.type + " " + var + ";");
 				$$.transl = "\t" + var + " = " + value + ";\n";

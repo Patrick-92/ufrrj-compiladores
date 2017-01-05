@@ -8,7 +8,7 @@ Blocos- (X) (verificar)
 Escopo global- (X)
 Tipo de dados primitivos (int, float, boolean, string e char) - (X)
 Inicialização de Variáveis - (X)
-Concatenação de String- ()
+Concatenação de String- (X) - obs.: necessita uma avaliação mais aprofundada
 Matrizes - ()
 Inicialização de Matrizes - ()
 Expressões - (X)
@@ -22,7 +22,7 @@ Operadores Lógicos (gerando boolean) - (X)
 Operadores Compostos - (X)
 Operadores Unários - (X - obs.: discutir com uma terceira pessoa do singular)
 Conversão de Tipos - (X)
-Mecanismos de Controle de Laços - (X) - Terminar o controle de erros - possibilidade cirar beginLoop e controlar com o EndLoop
+Mecanismos de Controle de Laços - (X)
 Detecção de Erros - ()
 Subprograma (Função) - ()
 

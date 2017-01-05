@@ -120,6 +120,13 @@ COMML	    "//".*\n
     return TK_CHAR;
 }
 
+{STRING}    {
+    yylval.transl = "";
+    yylval.label = yytext;
+    yylval.type = "string";
+    return TK_STRING;
+}
+
 {BOOL}      {
     yylval.transl = "";
     yylval.label = yytext;
