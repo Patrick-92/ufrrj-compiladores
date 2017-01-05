@@ -33,7 +33,7 @@ int tempGen = 0;
 int beginGen = 0;
 int endGen = 0;
 int endGenLoop = 0;
-bool openBlock = true;
+bool openBlock = false;
 
 string getNextVar();
 string getBeginLabel();
@@ -131,6 +131,20 @@ POP_SCOPE:	{
 				$$.label = "";
 			}
 
+RAISE_FALG	: {
+				trueFlagOpenBlock();
+				
+				$$.transl = "";
+				$$.label = "";
+			}
+			
+LOWER_FLAG	: {
+				falseFlagOpenBlock();
+				
+				$$.transl = "";
+				$$.label = "";
+			}
+			
 BLOCK		:  PUSH_SCOPE '{' STATEMENTS '}' POP_SCOPE {
 				$$.transl = $3.transl;
 			};
@@ -202,7 +216,7 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 					yyerror("Condicional não é um booleano");
 				}
 			}
-			| "while" '(' EXPR ')' BLOCK {
+			| "while" '(' EXPR ')' RAISE_FALG BLOCK LOWER_FLAG {
 				if($3.type == "bool"){
 					string var = getNextVar();
 					string begin = getBeginLabel();
@@ -214,25 +228,25 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 						//"\t" + $3.label + " = !" + $3.label + ";\n" +
 						begin + ":\t" + var + " = !" + $3.label + ";\n" + 
 						"\tif (" + var + ") goto " + end + ";\n" +
-						$5.transl +
+						$6.transl +
 						"\tgoto " + begin + ";\n" +
 						"\t" + end + ":\n";
 				}else{
 					yyerror("Variável " + $3.label + "com o tipo " + $3.type + "não é booleano\n");
 				}
 			}
-			| "do" BLOCK "while" '(' EXPR ')' ';' {
-				if($5.type == "bool"){
+			| "do" RAISE_FALG BLOCK LOWER_FLAG "while" '(' EXPR ')' ';' {
+				if($7.type == "bool"){
 					string begin = getBeginLabel();
 					string end = getEndLabelLoop();
 					string var = getNextVar();
 					
 					decls.push_back("\tint " + var + ";");
 					
-					$$.transl = $5.transl +
-						"\t" + begin + ":\t" + var + " = !" + $5.label + ";\n" + 
+					$$.transl = $7.transl +
+						"\t" + begin + ":\t" + var + " = !" + $7.label + ";\n" + 
 						//"\t" + begin + ":\n" +
-						$2.transl +
+						$3.transl +
 						"\tif (" + var + ") goto " + begin + ";\n";
 				}else{
 					// throw compile error
@@ -240,25 +254,25 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 					$$.transl = "ERROR";
 				}
 			}
-			| "for" '(' PUSH_SCOPE ATTRIBUTION  EXPR  ATTRIBUTION ')' BLOCK POP_SCOPE {
-				if($5.type == "bool"){
+			| "for" '(' PUSH_SCOPE RAISE_FALG ATTRIBUTION  EXPR  ATTRIBUTION ')' BLOCK LOWER_FLAG POP_SCOPE {
+				if($6.type == "bool"){
 					string var = getNextVar();
 					string begin = getBeginLabel();
 					string end = getEndLabelLoop();
 					
 					decls.push_back("\tint " + var + ";");
 					
-					$$.transl = $4.transl + "\n" +
+					$$.transl = $5.transl + "\n" +
 					begin + ":"  +
-					$5.transl + "\t" + var + "= !" + $5.label + ";\n" +
+					$6.transl + "\t" + var + "= !" + $6.label + ";\n" +
 					"\tif " + '(' + var + ") goto " + end + ";\n" +
-					$8.transl + 
-					$6.transl +
+					$9.transl + 
+					$7.transl +
 					"\tgoto " + begin + ";\n" +
 					"\t" + end + ":\n";
 					
 				}else{
-					yyerror("Variável " + $5.label + " com o tipo " + $5.type + " não é booleano\n");
+					yyerror("Variável " + $6.label + " com o tipo " + $6.type + " não é booleano\n");
 				}
 			};
 			

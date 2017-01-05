@@ -22,7 +22,7 @@ Operadores Lógicos (gerando boolean) - (X)
 Operadores Compostos - (X)
 Operadores Unários - (X - obs.: discutir com uma terceira pessoa do singular)
 Conversão de Tipos - (X)
-Mecanismos de Controle de Laços - (X)
+Mecanismos de Controle de Laços - (X) - Terminar o controle de erros - possibilidade cirar beginLoop e controlar com o EndLoop
 Detecção de Erros - ()
 Subprograma (Função) - ()
 
