@@ -1,38 +1,13 @@
 int main() {
-	int i;
+	bool i;
 	float j;
-	
-	for (int kk = 0 
-		kk < 5 
-		kk = kk + 1) {
-		int f = 0;
+	while(i){
 		continue;
-		break;
+		while(i){
+			continue;
+			while(i){
+				continue;
+			}
+		}
 	}
-	
-	icmt i;
-	
-	i icmt;
-
-	i += 1;
-	
-	i -= 1;
-	
-	i *= 1;
-	
-	i /= 1;
-
-	int a;
-	int b;
-	int z;
-	
-	z = (a>b) ? a b;
-	
-	string t = 'teste';
-	
-	t = 'ab';
-	
-	string p = 'teste2';
-	
-	string teste3 = t + p;
 }
