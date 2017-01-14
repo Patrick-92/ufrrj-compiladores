@@ -29,14 +29,19 @@ vector<string> decls;
 map<string, string> opMap;
 vector<map<string, var_info>> varMap;
 map<string, string> padraoMap;
+vector<int> stack;
 int tempGen = 0;
 int beginGen = 0;
 int endGen = 0;
 int endGenLoop = 0;
-int controlContinueBreak = 0; // esquema de controle para que o continue verifique o valor correto de x no BEGINx
+int controlContinueBreak = -1; // esquema de controle para que o continue verifique o valor correto de x no BEGINx
+int position = 0;
 int openBlock = 0;
+string varSwitch = "";
 
 string getNextVar();
+string getCurrentVar();
+
 string getBeginLabel();
 string getCurrentBeginLabel();
 string getEndLabel();
@@ -78,6 +83,9 @@ void yyerror(string);
 %token TK_WHILE "while"
 %token TK_DO "do"
 %token TK_FOR "for"
+%token TK_SWITCH "switch"
+%token TK_CASE "case"
+%token TK_DEFAULT "default"
 %token TK_PRINT "print"
 %token TK_ENDL "endl"
 %token TK_INCREMENT "icmt"
@@ -98,7 +106,7 @@ void yyerror(string);
 %left "icmt" "dcmt"
 %left "+=" "-=" "*=" "/="
 %left "and" "or" "not"
-%left "if" "elif" "else" "for" "while" "do"
+%left "if" "elif" "else" "for" "while" "do" "switch"
 
 
 %%
@@ -136,6 +144,7 @@ POP_SCOPE:	{
 
 RAISE_FALG	: {
 				trueFlagOpenBlock();
+				incrementControlContinueBreak();
 				
 				$$.transl = "";
 				$$.label = "";
@@ -226,8 +235,6 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 					string end = getEndLabelLoop();
 					decls.push_back("\tint " + var + ";");
 					
-					decls.push_back("\tint " + var + ";");
-					
 					$$.transl = $3.transl + 
 						//"\t" + $3.label + " = !" + $3.label + ";\n" +
 						begin + ":\t" + var + " = !" + $3.label + ";\n" + 
@@ -235,7 +242,6 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 						$6.transl +
 						"\tgoto " + begin + ";\n" +
 						"\t" + end + ":\n";
-					
 				}else{
 					yyerror("Variável " + $3.label + "com o tipo " + $3.type + "não é booleano\n");
 				}
@@ -277,7 +283,19 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 					"\t" + end + ":\n";
 					
 				}else{
-					yyerror("Variável " + $6.label + " com o tipo " + $6.type + " não é booleano\n");
+					yyerror("Variável " + $6.label + " com o tipo " + $6.type + " não é um booleano\n");
+				}
+			}
+			| "switch" '(' EXPR ')' '{' RAISE_FALG CASE LOWER_FLAG '}' {
+				if($3.type == "int"){
+					string var = getNextVar();
+					string begin = getBeginLabel();
+					
+					$$.transl = $3.transl + 
+					"\t" + begin + ":\n" +
+					$7.transl;
+				}else {
+					yyerror("Variável " + $3.label + " com o tipo " + $3.type + "não é um inteiro\n");
 				}
 			};
 			
@@ -292,23 +310,41 @@ ELSE		: "else" BLOCK {
 						"\n" + endelse + ":";
 			};
 			
+CASE		: "case" EXPR BLOCK CASE {
+				if ($2.type == "int") {
+					string varCase = getCurrentVar();
+					string endif = getEndLabel();
+					
+					$$.transl = $2.transl +
+					"\tif (" + varCase + " != " + $2.label + " ) goto " + endif + ";\n" +
+					$3.transl +
+					"\t" + endif + ":\n" +
+					$4.transl;
+				} else {
+					yyerror("Valor inserido não é um inteiro");
+				}
+			}
+			| "default" BLOCK {
+				string endSwitch = getEndLabelLoop();
+				
+				$$.transl = $2.transl +
+				"\t"+ endSwitch +";\n";
+			}
+			| { 
+				string endSwitch = getEndLabelLoop();
+				
+				$$.transl = "\t" + endSwitch + "\n"; 
+			}
+			;
+			
 LOOP_CONTROL_MECHANISMS : "continue" {
 							int flag = getFlagOpenBlock();
 							
 							if(flag >= 1){
 								string begin = getCurrentBeginLabel();
-								int control = getControlContinueBreak();
-								
-								if(control == beginGen) {
-									$$.transl = "\tbeginGen:" + begin + " control:" + to_string(control) + ";\n"; 
-								}else if(control != beginGen && beginGen == 0) {
-									$$.transl = "\tbeginGen:" + begin + " control:" + to_string(control) + ";\n"; 
-								}else {
-									$$.transl = "\tgoto BEGIN" + to_string(control) + ";\n";
-								}
-								
-								incrementControlContinueBreak();
-								
+								$$.transl = "\tgoto " + begin + ";\n";
+								//$$.transl = "\tbeginGen:" + begin + " control:" + to_string(getControlContinueBreak()) + ";\n";
+								//	position++;
 							} else {
 								yyerror("Mecanismo de controle de laço (continue) fora de um laço!");
 							}
@@ -1126,6 +1162,10 @@ string getNextVar() {
     return "t" + to_string(tempGen++);
 }
 
+string getCurrentVar() {
+    return "t" + to_string(tempGen);
+}
+
 string getBeginLabel() {
 	return "BEGIN" + to_string(beginGen++);
 }
@@ -1186,9 +1226,12 @@ void popContext() {
 }
 
 void incrementControlContinueBreak() {
-	controlContinueBreak += 1;
+	controlContinueBreak++;
+	stack.push_back(controlContinueBreak);
 }
 
 int getControlContinueBreak() {
-	return controlContinueBreak;
+	int value = stack[position];
+	cout << stack[position] << endl;
+	return value;
 }

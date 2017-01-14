@@ -1,13 +1,19 @@
 int main() {
-	bool i;
-	float j;
-	while(i){
-		continue;
-		while(i){
-			continue;
-			while(i){
-				continue;
-			}
-		}
+	int i;
+
+	switch ( i )
+  {
+     case 1 {
+       int j;
+       continue;
 	}
+	case 2 {
+       int j;
+       break;
+	}
+     default { 
+       int z;
+    }
+  }
+
 }
