@@ -15,7 +15,7 @@ Expressões - (X)
 Expressões Condicionais - (X)
 Comandos de Entrada e Saída
 Comandos de Laço (for, while e do/while) - (X)
-Comandos de Decisão (if, if/else e switch) - (falta switch)
+Comandos de Decisão (if, if/else e switch) - (X)
 Operadores Aritméticos - (X)
 Operadores Relacionais (gerando boolean) - (X)
 Operadores Lógicos (gerando boolean) - (X)

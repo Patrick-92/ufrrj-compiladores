@@ -59,6 +59,7 @@ void popContext();
 
 var_info* findVar(string label);
 void insertVar(string label, var_info info);
+void insertGlobalVar(string label, var_info info);
 
 int yylex(void);
 void yyerror(string);
@@ -97,6 +98,7 @@ void yyerror(string);
 %token TK_QUESTION "?"
 %token TK_CONTINUE "continue"
 %token TK_BREAK_LOOP "break"
+%token TK_GLOBAL "global"
 
 %start S
 
@@ -110,8 +112,12 @@ void yyerror(string);
 
 
 %%
+S			: PUSH_SCOPE T POP_SCOPE {
+				$$.transl = $2.transl;
+			};
 
-S 			: TK_INT_TYPE TK_MAIN '(' ')' BLOCK {
+
+T 			: TK_INT_TYPE TK_MAIN '(' ')' BLOCK {
 				cout << 
 				"/* Nebulous */" << endl <<
 				"#include <iostream>" << endl <<
@@ -393,6 +399,25 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 					$$.transl = "ERROR";
 				}
 			}
+			| TK_GLOBAL TYPE TK_ID '=' EXPR {
+				var_info* info = findVar($3.label);
+	
+				if (info == nullptr) {
+					if ($4.type == $2.transl) {
+						$$.transl = $5.transl;
+						
+						insertGlobalVar($3.label, {$2.transl, $5.label});
+					} else {
+						// throw compile error
+						$$.type = "ERROR";
+						$$.transl = "ERROR";
+					}
+				} else {
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
+			}
 			| TK_ID '=' EXPR {
 				var_info* info = findVar($1.label);
 				
@@ -485,6 +510,28 @@ DECLARATION : TYPE TK_ID {
 					$$.type = "ERROR";
 					$$.transl = "ERROR";
 				}
+			}
+			| TK_GLOBAL TYPE TK_ID {
+				var_info* info = findVar($3.label);
+				
+				if (info == nullptr) {
+					string var = getNextVar();
+					
+					insertGlobalVar($3.label, {$2.transl, var});
+					
+					decls.push_back("\t" + $2.transl + " " + var + ";");
+					
+					// tá inserindo o tipo \/ ($1.transl): tirar!
+					$$.transl = "\t" + var + " = " + 
+						padraoMap[$2.transl] + ";\n";
+					$$.label = var;
+					$$.type = $2.transl;
+				} else {
+					// throw compile error
+					$$.type = "ERROR";
+					$$.transl = "ERROR";
+				}
+				
 			};
 			
 INCREMENT	: "icmt" TK_ID {
@@ -1117,6 +1164,7 @@ VALUE		: TK_NUM {
 					$$.transl = "ERROR";
 				}
 			}
+			;
 
 %%
 
@@ -1214,6 +1262,10 @@ var_info* findVar(string label) {
 
 void insertVar(string label, var_info info) {
 	varMap[varMap.size() - 1][label] = info;
+}
+
+void insertGlobalVar(string label, var_info info) {
+	varMap[0][label] = info;
 }
 
 void pushContext() {

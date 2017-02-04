@@ -91,6 +91,7 @@ COMML	    "//".*\n
 "default"   { return TK_DEFAULT; }
 "continue"  { return TK_CONTINUE; }
 "break"     { return TK_BREAK_LOOP; }
+"global"     { return TK_GLOBAL; }
 
 "icmt"      { return TK_INCREMENT; }
 "dcmt"      { return TK_DECREMENT; }
