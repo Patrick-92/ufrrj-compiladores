@@ -24,9 +24,8 @@ ALPHA		{LETTER}|{DIGIT}
 AMPERSAND	&
 
 BREAK		\r?\n
-INDENT		" "{4}|\t
 /*Alterei o regex do espaço para qualquer quantidade de espaço*/
-SPACE		[" "]{1,3}
+SPACE		\s+
 
 INT     	{DIGIT}+
 FLOAT   	{DIGIT}+(\.{DIGIT}*)?([eE][\-\+]?{DIGIT}+)?[fF]
@@ -91,7 +90,7 @@ COMML	    "//".*\n
 "default"   { return TK_DEFAULT; }
 "continue"  { return TK_CONTINUE; }
 "break"     { return TK_BREAK_LOOP; }
-"global"     { return TK_GLOBAL; }
+"global"    { return TK_GLOBAL; }
 
 "icmt"      { return TK_INCREMENT; }
 "dcmt"      { return TK_DECREMENT; }

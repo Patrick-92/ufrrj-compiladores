@@ -1,5 +1,11 @@
 int main() {
-    global int i;
+    int i;
+    
+    string g = "aaa";
+    
+    g = "bbb";
+    
+    string h = "www";
 
 	switch ( i )
   {

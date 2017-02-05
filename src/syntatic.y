@@ -384,14 +384,26 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				var_info* info = findVar($2.label);
 	
 				if (info == nullptr) {
-					if ($4.type == $1.transl) {
-						$$.transl = $4.transl;
+					if ($1.label == "string") {
+						if ($4.type == $1.transl) {
+							$$.transl = $4.transl + "\tstrcpy(" + $2.transl + "," + $4.transl + ");\n";;
 						
-						insertVar($2.label, {$1.transl, $4.label});
+							insertVar($2.label, {$1.transl, $4.label});
+						} else {
+							// throw compile error
+							$$.type = "ERROR";
+							$$.transl = "ERROR";
+						}
 					} else {
-						// throw compile error
-						$$.type = "ERROR";
-						$$.transl = "ERROR";
+						if ($4.type == $1.transl) {
+							$$.transl = $4.transl;
+						
+							insertVar($2.label, {$1.transl, $4.label});
+						} else {
+							// throw compile error
+							$$.type = "ERROR";
+							$$.transl = "ERROR";
+						}
 					}
 				} else {
 					// throw compile error
@@ -424,9 +436,15 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				if (info != nullptr) {
 					// se tipo da expr for igual a do id
 					if (info->type == $3.type) {
-						$$.type = $3.type;
-						$$.transl = $3.transl + "\t" + info->name + " = " + $3.label + ";\n";
-						$$.label = $3.label;
+						if(info->type == "string"){
+							$$.type = $3.type;
+							$$.transl = $3.transl + "\tstrcpy(" + info->name + "," + $3.label + ");\n";
+							$$.label = $3.label;
+						} else {
+							$$.type = $3.type;
+							$$.transl = $3.transl + "\t" + info->name + " = " + $3.label + ";\n";
+							$$.label = $3.label;
+						}
 					} else {
 						string var = getNextVar();
 						string resType = opMap[info->type + "=" + $3.type];
@@ -441,13 +459,13 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 						} else {
 							// throw compile error
 							$$.type = "ERROR";
-							$$.transl = "ERROR";
+							$$.transl = "ERROR1";
 						}
 					}
 				} else {
 					// throw compile error
-					$$.type = "ERROR";
-					$$.transl = "ERROR";
+					$$.type = "ERROR2";
+					$$.transl = "ERROR2";
 				}
 			}
 			| INCREMENT {
@@ -498,13 +516,23 @@ DECLARATION : TYPE TK_ID {
 					
 					insertVar($2.label, {$1.transl, var});
 					
-					decls.push_back("\t" + $1.transl + " " + var + ";");
-					
-					// tá inserindo o tipo \/ ($1.transl): tirar!
-					$$.transl = "\t" + var + " = " + 
-						padraoMap[$1.transl] + ";\n";
-					$$.label = var;
-					$$.type = $1.transl;
+					if($1.transl == "string"){
+						decls.push_back("\tchar " + var + "[1000];");
+						
+						$$.transl = "\tstrcpy(" + var + "," + padraoMap[$1.transl] + ");\n";
+						
+						$$.label = var;
+						$$.type = $1.transl;
+					}else {
+						decls.push_back("\t" + $1.transl + " " + var + ";");
+						
+						// tá inserindo o tipo \/ ($1.transl): tirar!
+						$$.transl = "\t" + var + " = " + 
+							padraoMap[$1.transl] + ";\n";
+						$$.label = var;
+						$$.type = $1.transl;
+
+					}
 				} else {
 					// throw compile error
 					$$.type = "ERROR";
@@ -1138,8 +1166,8 @@ VALUE		: TK_NUM {
 				string var = getNextVar();
 				string value = $1.label;
 				
-				decls.push_back("\t" + $1.type + " " + var + ";");
-				$$.transl = "\t" + var + " = " + value + ";\n";
+				decls.push_back("\tchar" + var +"[1000];");
+				$$.transl = "\tstrcpy(" + var + "," + value + ");\n";
 				$$.label = var;
 			}
 			| TK_BOOL {
