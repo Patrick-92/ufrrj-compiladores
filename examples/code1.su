@@ -31,4 +31,18 @@ int main() {
     int j;
   }
 
+
+    while(c) {
+        continue;
+        while (d) {
+            continue;
+        }
+    }
+    
+    while(c) {
+        break;
+        while (d) {
+            break;
+        }
+    }
 }

@@ -14,7 +14,6 @@ struct attributes {
 	string label; // nome da variável usada no cód. intermediário (ex: "t0")
 	string type; // tipo no código intermediário (ex: "int")
 	string transl; // código intermediário (ex: "int t11 = 1;")
-	string endif;
 };
 
 typedef struct var_info {
@@ -43,11 +42,18 @@ string getNextVar();
 string getCurrentVar();
 
 string getBeginLabel();
+string getPrevBeginLabel();
 string getCurrentBeginLabel();
+string getCurrentBeginLabelContinue ();
+
 string getEndLabel();
 string getEndLabelLoop();
+
 string getCurrentEndLabel();
+string getPrevEndLabelLoop ();
 string getCurrentEndLabelLoop();
+string getCurrentEndLabelLoopBreak();
+
 void trueFlagOpenBlock();
 void falseFlagOpenBlock();
 int getFlagOpenBlock();
@@ -151,6 +157,8 @@ POP_SCOPE:	{
 RAISE_FALG	: {
 				trueFlagOpenBlock();
 				incrementControlContinueBreak();
+				string begin = getBeginLabel();
+				string end = getEndLabelLoop();
 				
 				$$.transl = "";
 				$$.label = "";
@@ -158,6 +166,8 @@ RAISE_FALG	: {
 			
 LOWER_FLAG	: {
 				falseFlagOpenBlock();
+				string begin = getPrevBeginLabel();
+				string end = getPrevEndLabelLoop();
 				
 				$$.transl = "";
 				$$.label = "";
@@ -235,16 +245,16 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 					yyerror("Condicional não é um booleano");
 				}
 			}
-			| "while" '(' EXPR ')' RAISE_FALG BLOCK LOWER_FLAG{
-				if($3.type == "bool"){
+			| RAISE_FALG "while" '(' EXPR ')' BLOCK LOWER_FLAG{
+				if($4.type == "bool"){
 					string var = getNextVar();
-					string begin = getBeginLabel();
-					string end = getEndLabelLoop();
+					string begin = getCurrentBeginLabel();
+					string end = getCurrentEndLabelLoop();
 					decls.push_back("\tint " + var + ";");
 					
-					$$.transl = $3.transl + 
+					$$.transl = $4.transl + 
 						//"\t" + $3.label + " = !" + $3.label + ";\n" +
-						begin + ":\t" + var + " = !" + $3.label + ";\n" + 
+						begin + ":\t" + var + " = !" + $4.label + ";\n" + 
 						"\tif (" + var + ") goto " + end + ";\n" +
 						$6.transl +
 						"\tgoto " + begin + ";\n" +
@@ -368,7 +378,7 @@ LOOP_CONTROL_MECHANISMS : "continue" {
 							int flag = getFlagOpenBlock();
 							
 							if(flag >= 1){
-								string begin = getCurrentBeginLabel();
+								string begin = getCurrentBeginLabelContinue();
 								$$.transl = "\tgoto " + begin + ";\n";
 								//$$.transl = "\tbeginGen:" + begin + " control:" + to_string(getControlContinueBreak()) + ";\n";
 								//	position++;
@@ -380,7 +390,8 @@ LOOP_CONTROL_MECHANISMS : "continue" {
 							int flag = getFlagOpenBlock();
 							
 							if(flag >= 1){
-								string end = getCurrentEndLabelLoop();
+								
+								string end = getCurrentEndLabelLoopBreak();
 								$$.transl = "\tgoto " + end + ";\n";
 							} else {
 								yyerror("Mecanismo de controle de laço (break) fora de um laço!");
@@ -1267,38 +1278,62 @@ string getBeginLabel() {
 	return "BEGIN" + to_string(beginGen++);
 }
 
+string getPrevBeginLabel () {
+	return "BEGIN" + to_string(beginGen--);
+}
+
 string getCurrentBeginLabel() {
 	return "BEGIN" + to_string(beginGen);
+}
+
+string getCurrentBeginLabelContinue () {
+	int temp = beginGen;
+	temp--;
+	return "BEGIN" + to_string(temp);
 }
 
 string getEndLabel() {
 	return "END" + to_string(endGen++);
 }
 
+string getCurrentEndLabel() {
+	return "END" + to_string(endGen);
+}
+
 string getEndLabelLoop() {
 	return "ENDLOOP" + to_string(endGenLoop++);
 }
 
-string getCurrentEndLabel() {
-	return "END" + to_string(endGen);
+string getPrevEndLabelLoop () {
+	return "ENDLOOP" + to_string(endGenLoop--);
 }
 
 string getCurrentEndLabelLoop() {
 	return "ENDLOOP" + to_string(endGenLoop);
 }
 
+string getCurrentEndLabelLoopBreak() {
+	int temp = endGenLoop;
+	temp--;
+	return "ENDLOOP" + to_string(temp);
+}
+
+//Incrementa a variável flag de controle de laço
 void trueFlagOpenBlock () {
 	openBlock += 1;
 }
 
+//Decrementa a variável flag de controle de laço
 void falseFlagOpenBlock () {
 	openBlock -= 1;
 }
 
+//Verifica qual o valor atual da variável flag
 int getFlagOpenBlock () {
 	return openBlock;
 }
 
+//Pesquisa variável na pilha de contexto
 var_info* findVar(string label) {
 	for (int i = varMap.size() - 1; i >= 0; i--) {
 		if (varMap[i].count(label)) {
@@ -1309,19 +1344,23 @@ var_info* findVar(string label) {
 	return nullptr;
 }
 
+//Insere variável no contexto atual
 void insertVar(string label, var_info info) {
 	varMap[varMap.size() - 1][label] = info;
 }
 
+//Insere uma variável global no primeiro contexto
 void insertGlobalVar(string label, var_info info) {
 	varMap[0][label] = info;
 }
 
+//Empilha Contexto
 void pushContext() {
 	map<string, var_info> newContext;
 	varMap.push_back(newContext);
 }
 
+//Desempilha Contexto
 void popContext() {
 	varMap.pop_back();
 }
