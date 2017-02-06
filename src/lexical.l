@@ -82,6 +82,7 @@ COMML	    "//".*\n
 
 "if"        { return TK_IF; }
 "else"      { return TK_ELSE; }
+"elif"      { return TK_ELIF; }
 "while"     { return TK_WHILE; }
 "do"        { return TK_DO; }
 "for"       { return TK_FOR; }

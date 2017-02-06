@@ -227,6 +227,7 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 						"\t" + var + " = !" + $3.label + ";\n" +
 						"\tif (" + var + ") goto " + endif + ";\n" +
 						$5.transl +
+						endif + ":\n" +
 						$6.transl;
 					
 				} else {
@@ -305,16 +306,36 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 				}
 			};
 			
-ELSE		: "else" BLOCK {
+ELSE		: "elif" '(' EXPR ')' BLOCK ELSE {
+				if ($3.type == "bool") {
+					string var = getNextVar();
+					string endif = getEndLabel();
+					
+					decls.push_back("\tint " + var + ";");
+					
+					$$.transl = $3.transl + 
+						"\t" + var + " = !" + $3.label + ";\n" +
+						"\tif (" + var + ") goto " + endif + ";\n" +
+						$5.transl +
+						endif + ":\n" +
+						$6.transl;
+					
+				} else {
+					// throw compile error
+					yyerror("Condicional não é um booleano");
+				}
+			}
+			| "else" BLOCK {
 				
 				string endelse = getEndLabel();
 				string endif = getCurrentEndLabel();
 				
-				$$.transl = $2.transl + 
+				$$.transl = $2.transl /*+ 
 					"\tgoto " + endelse + ";\n" +
 						endif + ":" + $2.transl +
-						"\n" + endelse + ":";
-			};
+						"\n" + endelse + ":"*/;
+			}
+			;
 			
 CASE		: "case" EXPR BLOCK CASE {
 				if ($2.type == "int") {
@@ -517,7 +538,7 @@ DECLARATION : TYPE TK_ID {
 					insertVar($2.label, {$1.transl, var});
 					
 					if($1.transl == "string"){
-						decls.push_back("\tchar " + var + "[1000];");
+						decls.push_back("\tchar " + var + "[10000];");
 						
 						$$.transl = "\tstrcpy(" + var + "," + padraoMap[$1.transl] + ");\n";
 						
@@ -1166,7 +1187,7 @@ VALUE		: TK_NUM {
 				string var = getNextVar();
 				string value = $1.label;
 				
-				decls.push_back("\tchar" + var +"[1000];");
+				decls.push_back("\tchar " + var +"[10000];");
 				$$.transl = "\tstrcpy(" + var + "," + value + ");\n";
 				$$.label = var;
 			}

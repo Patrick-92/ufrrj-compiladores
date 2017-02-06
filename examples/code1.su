@@ -7,6 +7,9 @@ int main() {
     
     string h = "www";
 
+    bool c;
+    bool d;
+
 	switch ( i )
   {
      case 1 {
@@ -20,6 +23,12 @@ int main() {
      default { 
        int z;
     }
+  }
+  
+  if (c) {
+  } elif (d) {
+  } else {
+    int j;
   }
 
 }
