@@ -31,18 +31,25 @@ int main() {
     int j;
   }
 
-
     while(c) {
-        continue;
+        
         while (d) {
             continue;
         }
+        continue;
     }
     
-    while(c) {
-        break;
-        while (d) {
-            break;
+    do {
+        continue;
+        do {
+            continue;
+        } while (d);
+    } while (c);
+    
+    for (int j = 0 c i icmt){
+        continue;
+        for (int k = 0 d i icmt) {
+            continue;
         }
     }
 }

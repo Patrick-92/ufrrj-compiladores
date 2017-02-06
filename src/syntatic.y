@@ -33,8 +33,6 @@ int tempGen = 0;
 int beginGen = 0;
 int endGen = 0;
 int endGenLoop = 0;
-int controlContinueBreak = -1; // esquema de controle para que o continue verifique o valor correto de x no BEGINx
-int position = 0;
 int openBlock = 0;
 string varSwitch = "";
 
@@ -57,8 +55,6 @@ string getCurrentEndLabelLoopBreak();
 void trueFlagOpenBlock();
 void falseFlagOpenBlock();
 int getFlagOpenBlock();
-void incrementControlContinueBreak();
-int getControlContinueBreak();
 
 void pushContext();
 void popContext();
@@ -156,7 +152,7 @@ POP_SCOPE:	{
 
 RAISE_FALG	: {
 				trueFlagOpenBlock();
-				incrementControlContinueBreak();
+				//incrementControlContinueBreak();
 				string begin = getBeginLabel();
 				string end = getEndLabelLoop();
 				
@@ -252,27 +248,26 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 					string end = getCurrentEndLabelLoop();
 					decls.push_back("\tint " + var + ";");
 					
-					$$.transl = $4.transl + 
-						//"\t" + $3.label + " = !" + $3.label + ";\n" +
+					$$.transl = $4.transl +
 						begin + ":\t" + var + " = !" + $4.label + ";\n" + 
 						"\tif (" + var + ") goto " + end + ";\n" +
 						$6.transl +
 						"\tgoto " + begin + ";\n" +
 						"\t" + end + ":\n";
 				}else{
-					yyerror("Variável " + $3.label + "com o tipo " + $3.type + "não é booleano\n");
+					yyerror("Variável " + $4.label + "com o tipo " + $4.type + "não é booleano\n");
 				}
 			}
-			| "do" RAISE_FALG BLOCK LOWER_FLAG "while" '(' EXPR ')' ';' {
-				if($7.type == "bool"){
-					string begin = getBeginLabel();
-					string end = getEndLabelLoop();
+			| RAISE_FALG "do" BLOCK "while" '(' EXPR ')' ';' LOWER_FLAG{
+				if($6.type == "bool"){
+					string begin = getCurrentBeginLabel();
+					string end = getCurrentEndLabelLoop();
 					string var = getNextVar();
 					
 					decls.push_back("\tint " + var + ";");
 					
-					$$.transl = $7.transl +
-						"\t" + begin + ":\t" + var + " = !" + $7.label + ";\n" + 
+					$$.transl = $6.transl +
+						"\t" + begin + ":\t" + var + " = !" + $6.label + ";\n" + 
 						//"\t" + begin + ":\n" +
 						$3.transl +
 						"\tif (" + var + ") goto " + begin + ";\n";
@@ -282,11 +277,11 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 					$$.transl = "ERROR";
 				}
 			}
-			| "for" '(' PUSH_SCOPE RAISE_FALG ATTRIBUTION  EXPR  ATTRIBUTION ')' BLOCK LOWER_FLAG POP_SCOPE {
+			| RAISE_FALG "for" '(' PUSH_SCOPE ATTRIBUTION  EXPR  ATTRIBUTION ')' BLOCK LOWER_FLAG POP_SCOPE {
 				if($6.type == "bool"){
 					string var = getNextVar();
-					string begin = getBeginLabel();
-					string end = getEndLabelLoop();
+					string begin = getCurrentBeginLabel();
+					string end = getCurrentEndLabelLoop();
 					
 					decls.push_back("\tint " + var + ";");
 					
@@ -303,16 +298,16 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 					yyerror("Variável " + $6.label + " com o tipo " + $6.type + " não é um booleano\n");
 				}
 			}
-			| "switch" '(' EXPR ')' '{' RAISE_FALG CASE LOWER_FLAG '}' {
-				if($3.type == "int"){
+			| RAISE_FALG "switch" '(' EXPR ')' '{' CASE '}' {
+				if($4.type == "int"){
 					string var = getNextVar();
 					string begin = getBeginLabel();
 					
-					$$.transl = $3.transl + 
+					$$.transl = $4.transl + 
 					"\t" + begin + ":\n" +
 					$7.transl;
 				}else {
-					yyerror("Variável " + $3.label + " com o tipo " + $3.type + "não é um inteiro\n");
+					yyerror("Variável " + $4.label + " com o tipo " + $4.type + "não é um inteiro\n");
 				}
 			};
 			
@@ -358,10 +353,10 @@ CASE		: "case" EXPR BLOCK CASE {
 					"\t" + endif + ":\n" +
 					$4.transl;
 				} else {
-					yyerror("Valor inserido não é um inteiro");
+					yyerror("Valor inserido não é um inteiro\n");
 				}
 			}
-			| "default" BLOCK {
+			| "default" BLOCK LOWER_FLAG{
 				string endSwitch = getEndLabelLoop();
 				
 				$$.transl = $2.transl +
@@ -380,8 +375,6 @@ LOOP_CONTROL_MECHANISMS : "continue" {
 							if(flag >= 1){
 								string begin = getCurrentBeginLabelContinue();
 								$$.transl = "\tgoto " + begin + ";\n";
-								//$$.transl = "\tbeginGen:" + begin + " control:" + to_string(getControlContinueBreak()) + ";\n";
-								//	position++;
 							} else {
 								yyerror("Mecanismo de controle de laço (continue) fora de um laço!");
 							}
@@ -1266,52 +1259,64 @@ void yyerror( string MSG ) {
 	exit (0);
 }
 
+//Incrementa o valor para variáveis do código intermediário
 string getNextVar() {
     return "t" + to_string(tempGen++);
 }
 
+//Verifica qual o valor atual da variável do código intermediário
 string getCurrentVar() {
     return "t" + to_string(tempGen);
 }
 
+//Incrementa o valor do label BEGIN
 string getBeginLabel() {
 	return "BEGIN" + to_string(beginGen++);
 }
 
+//Decrementa o valor do label BEGIN
 string getPrevBeginLabel () {
 	return "BEGIN" + to_string(beginGen--);
 }
 
+//Verifica qual o valor atual do label BEGIN
 string getCurrentBeginLabel() {
 	return "BEGIN" + to_string(beginGen);
 }
 
+//Decrementa 1 para adequação do valor do goto para o label BEGIN
 string getCurrentBeginLabelContinue () {
 	int temp = beginGen;
 	temp--;
 	return "BEGIN" + to_string(temp);
 }
 
+//Incrementa o valor do label END
 string getEndLabel() {
 	return "END" + to_string(endGen++);
 }
 
+//Verifica qual o valor atual do label END
 string getCurrentEndLabel() {
 	return "END" + to_string(endGen);
 }
 
+//Incrementa o valor do label ENDLOOP
 string getEndLabelLoop() {
 	return "ENDLOOP" + to_string(endGenLoop++);
 }
 
+//Decrementa o valor do do label ENDLOOP
 string getPrevEndLabelLoop () {
 	return "ENDLOOP" + to_string(endGenLoop--);
 }
 
+//Verifica qual o valor atual do label ENDLOOP
 string getCurrentEndLabelLoop() {
 	return "ENDLOOP" + to_string(endGenLoop);
 }
 
+//Decrementa 1 para adequação do valor do goto para o label ENDLOOP
 string getCurrentEndLabelLoopBreak() {
 	int temp = endGenLoop;
 	temp--;
@@ -1363,15 +1368,4 @@ void pushContext() {
 //Desempilha Contexto
 void popContext() {
 	varMap.pop_back();
-}
-
-void incrementControlContinueBreak() {
-	controlContinueBreak++;
-	stack.push_back(controlContinueBreak);
-}
-
-int getControlContinueBreak() {
-	int value = stack[position];
-	cout << stack[position] << endl;
-	return value;
 }
