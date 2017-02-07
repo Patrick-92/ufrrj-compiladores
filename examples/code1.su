@@ -1,5 +1,7 @@
 int main() {
     int i;
+    int a;
+    int b;
     
     string g = "aaa";
     
@@ -54,4 +56,6 @@ int main() {
             continue;
         }
     }
+    
+    b = a exp 4;
 }
