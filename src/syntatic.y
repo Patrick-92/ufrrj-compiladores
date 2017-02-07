@@ -30,11 +30,12 @@ vector<map<string, var_info>> varMap;
 map<string, string> padraoMap;
 vector<int> stack;
 int tempGen = 0;
-int beginGen = 0;
+int beginGen = 1;
 int endGen = 0;
-int endGenLoop = 0;
+int endGenLoop = 1;
 int openBlock = 0;
-string varSwitch = "";
+int controlTiesContinue = 1;
+int controlTiesBreak = 1;
 
 string getNextVar();
 string getCurrentVar();
@@ -42,7 +43,8 @@ string getCurrentVar();
 string getBeginLabel();
 string getPrevBeginLabel();
 string getCurrentBeginLabel();
-string getCurrentBeginLabelContinue ();
+string getCurrentBeginLabelContinue();
+void setBeginLabel(int );
 
 string getEndLabel();
 string getEndLabelLoop();
@@ -51,6 +53,7 @@ string getCurrentEndLabel();
 string getPrevEndLabelLoop ();
 string getCurrentEndLabelLoop();
 string getCurrentEndLabelLoopBreak();
+void setEndLabelLoop(int );
 
 void trueFlagOpenBlock();
 void falseFlagOpenBlock();
@@ -152,9 +155,16 @@ POP_SCOPE:	{
 
 RAISE_FALG	: {
 				trueFlagOpenBlock();
-				//incrementControlContinueBreak();
 				string begin = getBeginLabel();
 				string end = getEndLabelLoop();
+				
+				if(getFlagOpenBlock() == 1 && controlTiesContinue != beginGen){
+					setBeginLabel(controlTiesContinue);
+				}
+				
+				if(getFlagOpenBlock() == 1 && controlTiesBreak != endGenLoop){
+					setEndLabelLoop(controlTiesBreak);
+				}
 				
 				$$.transl = "";
 				$$.label = "";
@@ -164,6 +174,8 @@ LOWER_FLAG	: {
 				falseFlagOpenBlock();
 				string begin = getPrevBeginLabel();
 				string end = getPrevEndLabelLoop();
+				controlTiesContinue++;
+				controlTiesBreak++;
 				
 				$$.transl = "";
 				$$.label = "";
@@ -1284,6 +1296,10 @@ string getCurrentBeginLabel() {
 	return "BEGIN" + to_string(beginGen);
 }
 
+void setBeginLabel(int update) {
+	beginGen = update;
+}
+
 //Decrementa 1 para adequação do valor do goto para o label BEGIN
 string getCurrentBeginLabelContinue () {
 	int temp = beginGen;
@@ -1314,6 +1330,10 @@ string getPrevEndLabelLoop () {
 //Verifica qual o valor atual do label ENDLOOP
 string getCurrentEndLabelLoop() {
 	return "ENDLOOP" + to_string(endGenLoop);
+}
+
+void setEndLabelLoop(int update) {
+	endGenLoop = update;
 }
 
 //Decrementa 1 para adequação do valor do goto para o label ENDLOOP
