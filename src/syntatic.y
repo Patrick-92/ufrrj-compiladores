@@ -766,6 +766,12 @@ EXPR 		: EXPR '+' EXPR {
 						$3.label = var1;
 					}
 					
+					if ($3.type == "string") {
+						$$.type = "char";
+						$$.transl += "\tstrcat(" + $1.label + "," + $3.label + ");\n";
+						$$.label = $1.label;
+					}
+					
 					$$.type = resType;
 					decls.push_back("\t" + $$.type + " " + var + ";");
 					$$.transl += "\t" + var + " = " + 

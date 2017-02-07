@@ -6,6 +6,8 @@ int main() {
     g = "bbb";
     
     string h = "www";
+    
+    g = g + h;
 
     bool c;
     bool d;
