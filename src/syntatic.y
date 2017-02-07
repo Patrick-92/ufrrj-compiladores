@@ -30,8 +30,9 @@ vector<map<string, var_info>> varMap;
 map<string, string> padraoMap;
 vector<int> stack;
 int tempGen = 0;
-int beginGen = 1;
+int beginGen = 0;
 int endGen = 0;
+int beginGenLoop = 1;
 int endGenLoop = 1;
 int openBlock = 0;
 int controlTiesContinue = 1;
@@ -43,8 +44,12 @@ string getCurrentVar();
 string getBeginLabel();
 string getPrevBeginLabel();
 string getCurrentBeginLabel();
+
+string getBeginLabelLoop();
+string getPrevBeginLabelLoop ();
+string getCurrentBeginLabelLoop ();
 string getCurrentBeginLabelContinue();
-void setBeginLabel(int );
+void setBeginLabelLoop(int );
 
 string getEndLabel();
 string getEndLabelLoop();
@@ -155,11 +160,11 @@ POP_SCOPE:	{
 
 RAISE_FALG	: {
 				trueFlagOpenBlock();
-				string begin = getBeginLabel();
+				string begin = getBeginLabelLoop();
 				string end = getEndLabelLoop();
 				
-				if(getFlagOpenBlock() == 1 && controlTiesContinue != beginGen){
-					setBeginLabel(controlTiesContinue);
+				if(getFlagOpenBlock() == 1 && controlTiesContinue != beginGenLoop){
+					setBeginLabelLoop(controlTiesContinue);
 				}
 				
 				if(getFlagOpenBlock() == 1 && controlTiesBreak != endGenLoop){
@@ -172,7 +177,7 @@ RAISE_FALG	: {
 			
 LOWER_FLAG	: {
 				falseFlagOpenBlock();
-				string begin = getPrevBeginLabel();
+				string begin = getPrevBeginLabelLoop();
 				string end = getPrevEndLabelLoop();
 				controlTiesContinue++;
 				controlTiesBreak++;
@@ -256,7 +261,7 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 			| RAISE_FALG "while" '(' EXPR ')' BLOCK LOWER_FLAG{
 				if($4.type == "bool"){
 					string var = getNextVar();
-					string begin = getCurrentBeginLabel();
+					string begin = getCurrentBeginLabelLoop();
 					string end = getCurrentEndLabelLoop();
 					decls.push_back("\tint " + var + ";");
 					
@@ -272,7 +277,7 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 			}
 			| RAISE_FALG "do" BLOCK "while" '(' EXPR ')' ';' LOWER_FLAG{
 				if($6.type == "bool"){
-					string begin = getCurrentBeginLabel();
+					string begin = getCurrentBeginLabelLoop();
 					string end = getCurrentEndLabelLoop();
 					string var = getNextVar();
 					
@@ -292,7 +297,7 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 			| RAISE_FALG "for" '(' PUSH_SCOPE ATTRIBUTION  EXPR  ATTRIBUTION ')' BLOCK LOWER_FLAG POP_SCOPE {
 				if($6.type == "bool"){
 					string var = getNextVar();
-					string begin = getCurrentBeginLabel();
+					string begin = getCurrentBeginLabelLoop();
 					string end = getCurrentEndLabelLoop();
 					
 					decls.push_back("\tint " + var + ";");
@@ -313,7 +318,7 @@ CONDITIONAL : "if" '(' EXPR ')' BLOCK {
 			| RAISE_FALG "switch" '(' EXPR ')' '{' CASE '}' {
 				if($4.type == "int"){
 					string var = getNextVar();
-					string begin = getBeginLabel();
+					string begin = getBeginLabelLoop();
 					
 					$$.transl = $4.transl + 
 					"\t" + begin + ":\n" +
@@ -1302,15 +1307,32 @@ string getCurrentBeginLabel() {
 	return "BEGIN" + to_string(beginGen);
 }
 
-void setBeginLabel(int update) {
-	beginGen = update;
+//-------------------------------------------------------
+
+//Incrementa o valor do label BEGINLOOP
+string getBeginLabelLoop() {
+	return "BEGINLOOP" + to_string(beginGenLoop++);
+}
+
+//Decrementa o valor do label BEGINLOOP
+string getPrevBeginLabelLoop () {
+	return "BEGINLOOP" + to_string(beginGenLoop--);
+}
+
+//Verifica qual o valor atual do label BEGINLOOP
+string getCurrentBeginLabelLoop () {
+	return "BEGINLOOP" + to_string(beginGenLoop);
+}
+
+void setBeginLabelLoop(int update) {
+	beginGenLoop = update;
 }
 
 //Decrementa 1 para adequação do valor do goto para o label BEGIN
 string getCurrentBeginLabelContinue () {
-	int temp = beginGen;
+	int temp = beginGenLoop;
 	temp--;
-	return "BEGIN" + to_string(temp);
+	return "BEGINLOOP" + to_string(temp);
 }
 
 //Incrementa o valor do label END

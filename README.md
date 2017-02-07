@@ -22,7 +22,7 @@ Operadores Lógicos (gerando boolean) - (X)
 Operadores Compostos - (X)
 Operadores Unários - (X - obs.: discutir com uma terceira pessoa do singular)
 Conversão de Tipos - (X)
-Mecanismos de Controle de Laços - (X) - falta resolver a situação while(){ continue; while () { continue; }}
+Mecanismos de Controle de Laços - (X)
 Detecção de Erros - ()
 Subprograma (Função) - ()
 
