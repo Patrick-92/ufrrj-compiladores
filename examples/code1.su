@@ -6,7 +6,7 @@ int main() {
     string g = "aaa";
     
     g = "bbb";
-    
+    g = "c";
     string h = "www";
     
     g = g + h;
@@ -17,7 +17,7 @@ int main() {
 	switch ( i )
   {
      case 1 {
-       int j;
+       int i;
        continue;
 	}
 	case 2 {
@@ -58,4 +58,8 @@ int main() {
     }
     
     b = a exp 4;
+    
+    if (a < b) {
+        int teste;
+    }
 }

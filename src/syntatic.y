@@ -1173,43 +1173,28 @@ EXPR 		: EXPR '+' EXPR {
 			}
 			| EXPR "exp" EXPR {
 				string var = getNextVar();
+				string var1 = getNextVar();
 				string var2 = getNextVar();
 				string resType = opMap[$1.type + "exp" + $3.type];
 				string begin = getBeginLabel();
 				string end = getEndLabel();
 				
 				if (resType.size()) {
-					$$.transl = $3.transl;
-					
-					if ($1.type != resType) {
-						string var1 = getNextVar();
-						decls.push_back("\t" + resType + " " + var1 + ";");
-						$$.transl += "\t" + var1 + " = (" + 
-							resType + ") " + $1.label + ";\n";
-						
-						$1.label = var1;
-					}
-					
-					if ($3.type != resType) {
-						string var1 = getNextVar();
-						decls.push_back("\t" + resType + " " + var1 + ";");
-						$$.transl += "\t" + var1 + " = (" + 
-							resType + ") " + $3.label + "\n";
-						
-						$3.label = var1;
-					}
-					
-					$$.type = resType;
 					decls.push_back("\t" + $$.type + " " + var + ";");
+					decls.push_back("\tbool " + var1 + ";");
 					decls.push_back("\t" + $$.type + " " + var2 + ";");
+					$$.type = resType;
 					
-					$$.transl += "\tif (" + var2 + " > " + $3.label + ") goto " + end + ";\n" +
+					$$.transl = $3.transl +
+						begin + ":\t" + var1 + " = " + var2 + " > " + $3.label + ";\n" +
+						"\t" + var1 + " = !" + var1 + ";\n" +
+						"\tif (" + var1 + ") goto " + end + ";\n" +
 						"\n\t" + $1.label + " = " + $1.label + " * " + $1.label + ";\n" +
 						"\t" + var2 + " = " + var2 + " + 1;\n" +
 						"\n\tgoto " + begin + ";\n" +
 						"\t" + end + ":\n" +
 						"\t" + var + " = " + $1.label + ";\n";
-						
+					
 					$$.label = var;
 				} else {
 					yyerror("Tipo" + $1.type + " ou " + $3.type + "não possuem conversão implícita");
@@ -1220,7 +1205,6 @@ EXPR 		: EXPR '+' EXPR {
 				$$.label = $1.label;
 				$$.type = $1.type;
 			};
-			
 			
 TYPE		: TK_INT_TYPE
 			| TK_FLOAT_TYPE

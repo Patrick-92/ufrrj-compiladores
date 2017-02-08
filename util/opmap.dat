@@ -292,11 +292,5 @@ bool cast char int
 bool cast bool int
 bool cast float int
 int exp int int
-int exp float float
 float exp int float
-float exp float float
-float exp double double
-double exp float double
-double exp double double
 double exp int double
-int exp double double

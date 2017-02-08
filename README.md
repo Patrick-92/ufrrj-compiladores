@@ -35,7 +35,7 @@ Referências
 Declaração Implícita
 Vinculação Dinâmica de Tipos
 Inferência de Tipos
-Nova operações (exponenciação, ...)
+Nova operações (exponenciação, ...) (X) - exponenciação feita ob.: 42 -> 68 shift/reduce;
 Enumeração
 Subfaixa
 Matrizes Regulares
@@ -47,6 +47,14 @@ Controle de Laços (break all)
 Comandos Protegidos
 Procedimentos
 Passagens de Parâmetros utilizando nomes
+
+Coisas a resolver:
+O string tem q ser adaptável
+Consertar o exponenciação
+Implementar o Cin
+Verificação de contexto - duas ou mais variáveis iguais declaradas no mesmo escopo
+
+
 
 OBS: Slides de LP (https://github.com/malbarbo/na-lp-copl)
 Existe um erro a ser corrigido, quando vc fecha um escopo acaba fechando todos
