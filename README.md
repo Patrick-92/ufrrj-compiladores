@@ -50,8 +50,6 @@ Passagens de Parâmetros utilizando nomes
 
 Coisas a resolver:
 O string tem q ser adaptável
-Consertar o exponenciação
-Implementar o Cin
 Verificação de contexto - duas ou mais variáveis iguais declaradas no mesmo escopo
 
 

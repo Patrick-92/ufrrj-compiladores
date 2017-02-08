@@ -110,6 +110,7 @@ void yyerror(string);
 %token TK_CONTINUE "continue"
 %token TK_BREAK_LOOP "break"
 %token TK_GLOBAL "global"
+%token TK_READ "read"
 
 %start S
 
@@ -217,6 +218,9 @@ STATEMENT 	: EXPR ';' {
 				$$.transl = $1.transl;
 			}
 			| PRINT ';' {
+				$$.transl = $1.transl;
+			}
+			| READ ';' {
 				$$.transl = $1.transl;
 			}
 			| { $$.transl = ""; }
@@ -422,6 +426,17 @@ PRINT_ARGS	: PRINT_ARG PRINT_ARGS {
 PRINT_ARG	: EXPR { $$.transl = " << " + $1.label; }
 			| TK_ENDL { $$.transl = " << std::endl"; }
 			;
+
+READ		: "read" READ_ARGS {
+				$$.transl = "\tstd::cin" + $2.transl + ";\n";
+			};
+			
+READ_ARGS	: READ_ARG READ_ARGS {
+				$$.transl = $1.transl + $2.transl;
+			}
+			| READ_ARG { $$.transl = $1.transl; };
+			
+READ_ARG	: EXPR { $$.transl = " >> " + $1.label; };
 			
 ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				var_info* info = findVar($2.label);

@@ -80,6 +80,7 @@ COMML	    "//".*\n
 
 "print"     { return TK_PRINT; }
 "endl"      { return TK_ENDL; }
+"read"      { return TK_READ; }
 
 "if"        { return TK_IF; }
 "else"      { return TK_ELSE; }
