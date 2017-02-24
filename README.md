@@ -35,7 +35,7 @@ Referências
 Declaração Implícita
 Vinculação Dinâmica de Tipos
 Inferência de Tipos
-Nova operações (exponenciação, ...) (X) - exponenciação feita ob.: 42 -> 68 shift/reduce;
+Nova operações (exponenciação, ...) (X) - exponenciação e fatorial feitos;
 Enumeração
 Subfaixa
 Matrizes Regulares

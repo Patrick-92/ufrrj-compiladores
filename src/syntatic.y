@@ -17,6 +17,7 @@ struct attributes {
 	string label; // nome da variável usada no cód. intermediário (ex: "t0")
 	string type; // tipo no código intermediário (ex: "int")
 	string transl; // código intermediário (ex: "int t11 = 1;")
+	int lenght; // tamanho do vetor de char
 };
 
 typedef struct var_info {
@@ -113,6 +114,7 @@ void yyerror(string);
 %token TK_OPCOMPOUND_DIVIDE_EQUAL "/="
 %token TK_QUESTION "?"
 %token TK_EXPONENT "exp"
+%token TK_FACTORIAL "fat"
 %token TK_CONTINUE "continue"
 %token TK_BREAK_LOOP "break"
 %token TK_GLOBAL "global"
@@ -120,6 +122,7 @@ void yyerror(string);
 
 %start S
 
+%left "exp" "fat"
 %left '<' '>' "<=" ">=" "!=" "=="
 %left '*' '/'
 %left '+' '-'
@@ -470,9 +473,7 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 						
 							insertVar($2.label, {$1.transl, $4.label});
 						} else {
-							// throw compile error
-							$$.type = "ERROR";
-							$$.transl = "ERROR";
+							yyerror("Tipo de valor da expressão diferente do tipo da variável que a recebe");
 						}
 					} else {
 						if ($4.type == $1.transl) {
@@ -480,15 +481,11 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 						
 							insertVar($2.label, {$1.transl, $4.label});
 						} else {
-							// throw compile error
-							$$.type = "ERROR";
-							$$.transl = "ERROR";
+							yyerror("Tipo de valor da expressão diferente do tipo da variável que a recebe");
 						}
 					}
 				} else {
-					// throw compile error
-					$$.type = "ERROR";
-					$$.transl = "ERROR";
+					yyerror("Variável " + $2.label + "já existente");
 				}
 			}
 			| TK_GLOBAL TYPE TK_ID '=' EXPR {
@@ -512,16 +509,18 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				int column = atoi(&$6.transl[6]);
 				int columnMatrixDeclared = info->collumn;
 				
-				if (line != 0 && column != 0) {	
+				if (line != 0 && column != 0 && line <= info->line && column <= info->collumn) {	
 					if (info != nullptr) {
 						// se tipo da expr for igual a do id
 						if (info->type == $9.type) {
 							if(info->type == "string"){
-								
+								string var = getNextVar();
 								$$.type = $3.type;
-								//decls.at(index) = "\tchar " + info->name + "[" + to_string($3.label.size()+1) + "]" + ";";
-								$$.transl = $3.transl + "\tstrcpy(" + info->name + "," + $3.label + ");\n";
-								$$.label = $3.label;
+								decls.push_back("\tchar " + var + "[" + to_string($3.label.size()+1) + "]" + ";");
+								insertVar(var, {"char", var});
+								
+								$$.transl = $9.transl + "\tstrcpy(" + info->name + "," + $9.label + ");\n";
+								$$.label = $9.label;
 							} else {
 								int total = column + columnMatrixDeclared * (line - 1);
 								$$.type = $3.type;
@@ -535,7 +534,7 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 						yyerror("Variável " + $1.label + "não existe");
 					}
 				} else {
-					yyerror("Valor da linha ou coluna da variável não pode ser 0");
+					yyerror("Valor da linha ou coluna da matriz inválio");
 				}
 			}
 			| TK_ID '=' EXPR {
@@ -545,11 +544,14 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 					// se tipo da expr for igual a do id
 					if (info->type == $3.type) {
 						if(info->type == "string"){
-							
+							string var = getNextVar();
+							cout << $3.transl<< endl;
 							$$.type = $3.type;
-							//decls.at(index) = "\tchar " + info->name + "[" + to_string($3.label.size()+1) + "]" + ";";
-							$$.transl = $3.transl + "\tstrcpy(" + info->name + "," + $3.label + ");\n";
+							//decls.push_back("\tchar " + var + "[" + to_string($3.lenght) + "]" + ";");
+							insertVar($1.label, {$1.type, $3.label});
+							//$$.transl = $3.transl + "\tstrcpy(" + var + "," + $3.label + ");\n";
 							$$.label = $3.label;
+							$$.lenght = $3.lenght;
 						} else {
 							$$.type = $3.type;
 							$$.transl = $3.transl + "\t" + info->name + " = " + $3.label + ";\n";
@@ -567,7 +569,7 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 							$$.type = info->type;
 							$$.label = var;
 						} else {
-							yyerror("Conversão implícita de " + info->type + " com " + $3.type + "não permitida");
+							yyerror("Conversão implícita de " + info->type + " com " + $3.type + " não permitida");
 						}
 					}
 				} else {
@@ -664,10 +666,10 @@ DECLARATION : TYPE TK_ID {
 				}
 				
 			}
-			| TYPE TK_ID '['TK_NUM']' '['TK_NUM']'{
+			| TYPE TK_ID '['VALUE']' '['VALUE']'{
 				var_info* info = findVar($2.label);
-				int line = atoi (&$4.label[0]);
-				int column = atoi(&$7.label[0]);
+				int line = atoi(&$4.transl[6]);
+				int column = atoi(&$7.transl[6]);
 				
 				if (line != 0 && column != 0) {
 					if (info == nullptr) {
@@ -676,9 +678,8 @@ DECLARATION : TYPE TK_ID {
 						insertVar($2.label, {$1.transl, var, column, line});
 						
 						if($1.transl == "string"){
-							decls.push_back("\tchar " + var + "[10000];");
-							
-							$$.transl = "\tstrcpy(" + var + "," + padraoMap[$1.transl] + ");\n";
+							decls.push_back("\tchar " + var + "[" + to_string(line*column) + "];");
+							$$.transl = "\t" + var + "[" + to_string(line*column) + "];\n";
 							
 							$$.label = var;
 							$$.type = $1.transl;
@@ -696,13 +697,13 @@ DECLARATION : TYPE TK_ID {
 						yyerror("Variável "+ $2.label + " já existe");
 					}
 				} else {
-					yyerror("Valores da matriz não podem começar com zero");
+					yyerror("Valor da linha ou coluna da matriz inválido");
 				}
 			}
-			| TK_GLOBAL TYPE TK_ID '['TK_NUM']' '['TK_NUM']' {
+			| TK_GLOBAL TYPE TK_ID '['VALUE']' '['VALUE']' {
 				var_info* info = findVar($3.label);
-				int line = atoi (&$5.label[0]);
-				int column = atoi(&$8.label[0]);
+				int line = atoi(&$5.transl[6]);
+				int column = atoi(&$8.transl[6]);
 				
 				if (line != 0 && column != 0){
 					if (info == nullptr) {
@@ -711,9 +712,10 @@ DECLARATION : TYPE TK_ID {
 						insertGlobalVar($2.label, {$1.transl, var, column, line});
 						
 						if($1.transl == "string"){
-							decls.push_back("\tchar " + var + "[10000];");
 							
-							$$.transl = "\tstrcpy(" + var + "," + padraoMap[$1.transl] + ");\n";
+							decls.push_back("\tchar " + var + "[" + to_string( line*column ) + "]" + ";");
+							
+							$$.transl = "\t" + var + "[" + to_string( line*column ) + "]" + ";\n";
 							
 							$$.label = var;
 							$$.type = $1.transl;
@@ -731,7 +733,7 @@ DECLARATION : TYPE TK_ID {
 						yyerror("Variável "+ $2.label + " já existe");
 					}
 				} else {
-					yyerror("Valores da matriz não podem começar com zero");
+					yyerror("Valor da linha ou coluna da matriz inválido");
 				}
 			};
 			
@@ -811,7 +813,7 @@ DECREMENT	: "dcmt" TK_ID {
 			}
 			;
 			
-OP_COMPOUND : TK_ID "+=" TK_NUM {
+OP_COMPOUND : TK_ID "+=" EXPR {
 				var_info* info = findVar($1.label);
 				
 				if(info != nullptr){
@@ -821,13 +823,13 @@ OP_COMPOUND : TK_ID "+=" TK_NUM {
 						$$.transl = $1.transl + $3.transl +
 						"\t" + info->name + " = " + info->name + " + " + $3.label + ";\n";
 					}else{
-						yyerror("Tipo da variável " + $1.label + " diferente do valor '" + $3.label + "' acrescido!");
+						yyerror("Tipo da variável " + $1.label + " diferente do valor '" + $3.label + " acrescido!");
 					}
 				}else{
 					yyerror("Variável" + $1.label + " inexistente !");
 				}
 			}
-			| TK_ID "-=" TK_NUM {
+			| TK_ID "-=" EXPR {
 				var_info* info = findVar($1.label);
 				
 				if(info != nullptr){
@@ -843,7 +845,7 @@ OP_COMPOUND : TK_ID "+=" TK_NUM {
 					yyerror("Variável" + $1.label + " inexistente !");
 				}
 			}
-			| TK_ID "*=" TK_NUM {
+			| TK_ID "*=" EXPR {
 				var_info* info = findVar($1.label);
 				
 				if(info != nullptr){
@@ -859,7 +861,7 @@ OP_COMPOUND : TK_ID "+=" TK_NUM {
 					yyerror("Variável" + $1.label + " inexistente !");
 				}
 			}
-			| TK_ID "/=" TK_NUM {
+			| TK_ID "/=" EXPR {
 				var_info* info = findVar($1.label);
 				
 				if(info != nullptr){
@@ -902,10 +904,17 @@ EXPR 		: EXPR '+' EXPR {
 						$3.label = var1;
 					}
 					
-					if ($3.type == "string") {
+					if ($3.type == "string" && $1.type == "string") {
+						string var1 = getNextVar();
+						
 						$$.type = "char";
-						$$.transl += "\tstrcat(" + $1.label + "," + $3.label + ");\n";
-						$$.label = $1.label;
+						decls.push_back("\tchar " + var1 + "[" + to_string($1.lenght+$3.lenght) + "]" + ";");
+						
+						
+						$$.transl += "\tstrcat(" + var1 + "," + $1.label + ");\n" +
+									"\tstrcat(" + var1 + "," + $3.label + ");\n";
+						$$.label = var;
+						$$.lenght = $1.lenght+$3.lenght;
 					}
 					
 					$$.type = resType;
@@ -914,9 +923,7 @@ EXPR 		: EXPR '+' EXPR {
 						$1.label + " + " + $3.label + ";\n";
 					$$.label = var;
 				} else {
-					// throw compile error
-					$$.type = "ERROR";
-					$$.transl = "ERROR";
+					yyerror("");
 				}
 			}
 			| EXPR '-' EXPR {
@@ -1330,6 +1337,35 @@ EXPR 		: EXPR '+' EXPR {
 					yyerror("Tipo" + $1.type + " ou " + $3.type + "não possuem conversão implícita");
 				}
 			}
+			| EXPR "fat"{
+				string var = getNextVar();
+				string var1 = getNextVar();
+				string var2 = getNextVar();
+				string begin = getBeginLabel();
+				string end = getEndLabel();
+				
+				if ($1.type == "int") {
+					decls.push_back("\t" + $$.type + " " + var + ";");
+					decls.push_back("\tbool " + var1 + ";");
+					decls.push_back("\t" + $$.type + " " + var2 + ";");
+					$$.type = $1.type;
+					
+					$$.transl = $1.transl +
+						"\t" + var2 + " = " + $1.label + ";\n" +
+						begin + ":\t" + var1 + " = " + var2 + " <= 0;\n" +
+						"\t" + var1 + " = !" + var1 + ";\n" +
+						"\tif (" + var1 + ") goto " + end + ";\n" +
+						"\n\t" + var2 + " = " + var2 + " - 1;\n" +
+						"\t" + $1.label + " = " + $1.label + " * " + var2 + ";\n" +
+						"\n\tgoto " + begin + ";\n" +
+						"\t" + end + ":\n" +
+						"\t" + var + " = " + $1.label + ";\n";
+					
+					$$.label = var;
+				} else {
+					yyerror("Tipo " + $1.type + " não possuem conversão implícita");
+				}
+			}
 			| VALUE {
 				$$.transl = $1.transl;
 				$$.label = $1.label;
@@ -1372,9 +1408,10 @@ VALUE		: TK_NUM {
 			| TK_STRING {
 				string var = getNextVar();
 				string value = $1.label;
-				decls.push_back("\tchar " + var +"[10000];");
+				decls.push_back("\tchar " + var +"[" + to_string($1.label.size()-2) + "];"); 
 				$$.transl = "\tstrcpy(" + var + "," + value + ");\n";
 				$$.label = var;
+				$$.lenght = $1.label.size()-2;
 			}
 			| TK_BOOL {
 				string var = getNextVar();
@@ -1394,8 +1431,7 @@ VALUE		: TK_NUM {
 					$$.transl = "";
 				} else {
 					// throw compile error
-					$$.type = "ERROR";
-					$$.transl = "ERROR";
+					yyerror("Variável " + $1.label + "Já existe");
 				}
 			}
 			;
@@ -1555,6 +1591,7 @@ var_info* findVar(string label) {
 	return nullptr;
 }
 
+//descobrir o índice de uma variável no vetor de variáveis
 int findValue(string label) {
 	for (int i = 0; i < decls.size(); i++) {
 		if (decls.at(i) == label) {

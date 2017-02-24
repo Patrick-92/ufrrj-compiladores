@@ -1,8 +1,12 @@
 int main() {
     
     
-    int d[1][4];
-
-    d[1][3] = 2; 
-    // teste
+    //string c;
+    
+    //c = "aaaaaa";
+    //c = "bbb";
+    
+    int fatorial;
+    fatorial = 8 fat;
+    fatorial =  2 exp 4;
 }

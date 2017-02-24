@@ -77,6 +77,7 @@ COMML	    "//".*\n
 "/="        { return TK_OPCOMPOUND_DIVIDE_EQUAL; }
 "?"         { return TK_QUESTION; }
 "exp"       { return TK_EXPONENT; }
+"fat"       { return TK_FACTORIAL; }
 
 "print"     { return TK_PRINT; }
 "endl"      { return TK_ENDL; }
