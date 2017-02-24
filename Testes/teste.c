@@ -13,6 +13,10 @@ int main(void) {
 	int t7;
 	bool t8;
 	int t9;
+	int t10;
+	float t11[8];
+	int t12;
+	float t13;
 
 	t0 = 0;
 
@@ -42,6 +46,10 @@ BEGIN1:	t8 = t9 > t6;
 	END1:
 	t7 = t5;
 	t0 = t7;
+
+	t11[8];
+	t13 = 3.800000;
+	t11[3] = t13;
 
 	return 0;
 }

@@ -9,4 +9,8 @@ int main() {
     int fatorial;
     fatorial = 8 fat;
     fatorial =  2 exp 4;
+    
+    float a[8];
+    
+    a[3] = 3.8f; 
 }

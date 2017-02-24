@@ -503,7 +503,7 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 					yyerror("Variável" + $3.label + "já existe no programa");
 				}
 			}
-			| TK_ID '['VALUE']' '['VALUE']' '=' EXPR{
+			| TK_ID '['VALUE']' '['VALUE']' '=' EXPR {
 				var_info* info = findVar($1.label);
 				int line = atoi(&$3.transl[6]); 
 				int column = atoi(&$6.transl[6]);
@@ -523,7 +523,7 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 								$$.label = $9.label;
 							} else {
 								int total = column + columnMatrixDeclared * (line - 1);
-								$$.type = $3.type;
+								$$.type = $9.type;
 								$$.transl = $9.transl + "\t" + info->name + "[" + to_string(total) + "] = " + $9.label + ";\n";
 								$$.label = $9.label;
 							}
@@ -535,6 +535,38 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 					}
 				} else {
 					yyerror("Valor da linha ou coluna da matriz inválio");
+				}
+			}
+			| TK_ID '['VALUE']' '=' EXPR {
+				var_info* info = findVar($1.label);
+				int column = atoi(&$3.transl[6]);
+				
+				if (column != 0 && column <= info->collumn) {	
+					if (info != nullptr) {
+						// se tipo da expr for igual a do id
+						cout << info->type << $6.type << endl;
+						if (info->type == $6.type) {
+							if(info->type == "string"){
+								string var = getNextVar();
+								$$.type = $3.type;
+								decls.push_back("\tchar " + var + "[" + to_string($6.label.size()+1) + "]" + ";");
+								insertVar($1.label, {"char", var});
+								
+								$$.transl = $6.transl + "\tstrcpy(" + info->name + "," + $6.label + ");\n";
+								$$.label = $6.label;
+							} else {
+								$$.type = $6.type;
+								$$.transl = $6.transl + "\t" + info->name + "[" + to_string(column) + "] = " + $6.label + ";\n";
+								$$.label = $6.label;
+							}
+						}else {
+							yyerror("Tipo da expressão diferente do tipo do vetor");
+						}
+					} else {
+						yyerror("Variável " + $1.label + "não existe");
+					}
+				} else {
+					yyerror("Valor da coluna do vetor, inválio");
 				}
 			}
 			| TK_ID '=' EXPR {
@@ -683,7 +715,7 @@ DECLARATION : TYPE TK_ID {
 							
 							$$.label = var;
 							$$.type = $1.transl;
-						}else {
+						} else {
 							
 							decls.push_back("\t" + $1.transl + " " + var + "[" + to_string(line*column) + "]" + ";");
 							
@@ -697,7 +729,38 @@ DECLARATION : TYPE TK_ID {
 						yyerror("Variável "+ $2.label + " já existe");
 					}
 				} else {
-					yyerror("Valor da linha ou coluna da matriz inválido");
+					yyerror("Valor da linha ou coluna da matriz, inválido");
+				}
+			}
+			| TYPE TK_ID '['VALUE']'{
+				var_info* info = findVar($2.label);
+				int column = atoi(&$4.transl[6]);
+				
+				if (column != 0) {
+					if (info == nullptr) {
+						string var = getNextVar();
+						
+						insertVar($2.label, {$1.transl, var, column});
+						if($1.transl == "string"){
+							decls.push_back("\tchar " + var + "[" + to_string(column) + "];");
+							$$.transl = "\t" + var + "[" + to_string(column) + "];\n";
+							
+							$$.label = var;
+							$$.type = $1.transl;
+						} else {
+							
+							decls.push_back("\t" + $1.transl + " " + var + "[" + to_string(column) + "]" + ";");
+							
+							// tá inserindo o tipo \/ ($1.transl): tirar!
+							$$.transl = "\t" + var + "[" + to_string( column ) + "];";
+							$$.label = var;
+							$$.type = $1.transl;
+						}
+					} else {
+						yyerror("Variável "+ $2.label + " já existe");
+					}
+				} else {
+					yyerror("Valor da linha do vetor, inválido");
 				}
 			}
 			| TK_GLOBAL TYPE TK_ID '['VALUE']' '['VALUE']' {
@@ -734,6 +797,38 @@ DECLARATION : TYPE TK_ID {
 					}
 				} else {
 					yyerror("Valor da linha ou coluna da matriz inválido");
+				}
+			}
+			| TK_GLOBAL TYPE TK_ID '['VALUE']'{
+				var_info* info = findVar($2.label);
+				int column = atoi(&$5.transl[6]);
+				
+				if (column != 0) {
+					if (info == nullptr) {
+						string var = getNextVar();
+						
+						insertGlobalVar($3.label, {$2.transl, var, column});
+						if($1.transl == "string"){
+							decls.push_back("\tchar " + var + "[" + to_string(column) + "];");
+							$$.transl = "\t" + var + "[" + to_string(column) + "];\n";
+							
+							$$.label = var;
+							$$.type = $2.transl;
+						} else {
+							
+							decls.push_back("\t" + $2.transl + " " + var + "[" + to_string(column) + "]" + ";");
+							
+							// tá inserindo o tipo \/ ($1.transl): tirar!
+							$$.transl = "\t" + var + "[" + to_string( column ) + "];";
+							$$.label = var;
+							$$.type = $2.transl;
+	
+						}
+					} else {
+						yyerror("Variável "+ $3.label + " já existe");
+					}
+				} else {
+					yyerror("Valor da linha do vetor, inválido");
 				}
 			};
 			
@@ -1363,7 +1458,7 @@ EXPR 		: EXPR '+' EXPR {
 					
 					$$.label = var;
 				} else {
-					yyerror("Tipo " + $1.type + " não possuem conversão implícita");
+					yyerror("Tipo " + $1.type + " não possuí conversão implícita nesta expressão");
 				}
 			}
 			| VALUE {
