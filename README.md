@@ -9,7 +9,7 @@ Escopo global- (X)
 Tipo de dados primitivos (int, float, boolean, string e char) - (X)
 Inicialização de Variáveis - (X)
 Concatenação de String- (X) - obs.: necessita uma avaliação mais aprofundada
-Matrizes - ()
+Matrizes - (X) - falta conversão implícita e tratamento de string's
 Inicialização de Matrizes - (X)
 Expressões - (X)
 Expressões Condicionais - (X)

@@ -466,10 +466,10 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				if (info == nullptr) {
 					if ($1.label == "string") {
 						if ($4.type == $1.transl) {
-							//int index = findValue("\tchar " + $2.transl +  "[10000];");
 							decls.push_back("\tchar " + $2.transl + "[" + to_string($4.label.size()+1) + "]" + ";");
-							//decls.at(index) = "\tchar " + $2.transl + "[" + to_string($4.label.size()+1) + "]" + ";";
-							$$.transl = $4.transl + "\tstrcpy(" + $2.transl + "," + $4.transl + ");\n";;
+							$$.transl = $4.transl/* + "\tstrcpy(" + $2.transl + "," + $4.transl + ");\n"*/;
+							$$.type = $2.type;
+							$$.label = $2.label;
 						
 							insertVar($2.label, {$1.transl, $4.label});
 						} else {
@@ -577,12 +577,12 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 					if (info->type == $3.type) {
 						if(info->type == "string"){
 							string var = getNextVar();
-							cout << $3.transl<< endl;
+							cout << $1.label<< endl;
 							$$.type = $3.type;
 							//decls.push_back("\tchar " + var + "[" + to_string($3.lenght) + "]" + ";");
-							insertVar($1.label, {$1.type, $3.label});
-							//$$.transl = $3.transl + "\tstrcpy(" + var + "," + $3.label + ");\n";
-							$$.label = $3.label;
+							insertVar($1.label, {$3.type, $3.label});
+							$$.transl = $3.transl;// + "\tstrcpy(" + var + "," + $3.label + ");\n";
+							$$.label = $1.label;
 							$$.lenght = $3.lenght;
 						} else {
 							$$.type = $3.type;
@@ -1503,7 +1503,9 @@ VALUE		: TK_NUM {
 			| TK_STRING {
 				string var = getNextVar();
 				string value = $1.label;
-				decls.push_back("\tchar " + var +"[" + to_string($1.label.size()-2) + "];"); 
+				decls.push_back("\tchar " + var +"[" + to_string($1.label.size()-2) + "];");
+				insertVar(var, {$1.type, var});
+				//cout << $1.type << var << endl;
 				$$.transl = "\tstrcpy(" + var + "," + value + ");\n";
 				$$.label = var;
 				$$.lenght = $1.label.size()-2;

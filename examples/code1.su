@@ -1,16 +1,11 @@
 int main() {
     
     
-    //string c;
+    string c = "aaaa";
     
-    //c = "aaaaaa";
-    //c = "bbb";
+    print c;
     
-    int fatorial;
-    fatorial = 8 fat;
-    fatorial =  2 exp 4;
+    c = "aaa";
     
-    float a[8];
-    
-    a[3] = 3.8f; 
+    print c;
 }
