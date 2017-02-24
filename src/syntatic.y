@@ -5,6 +5,9 @@
 #include <map>
 #include <fstream>
 #include <vector>
+#include <stdlib.h> 
+#include <stdio.h>  
+#include <string.h>
 
 #define YYSTYPE attributes
 
@@ -19,6 +22,8 @@ struct attributes {
 typedef struct var_info {
 	string type; // tipo da variável usada no cód. intermediário (ex: "int")
 	string name; // nome da variável usada no cód. intermediário (ex: "t0")
+	int collumn; // número de colunas da matriz 
+	int line; // número de linhas na matriz
 } var_info;
 
 string type1, type2, op, typeRes, value;
@@ -67,6 +72,7 @@ int getFlagOpenBlock();
 void pushContext();
 void popContext();
 
+int findValue(string );
 var_info* findVar(string label);
 void insertVar(string label, var_info info);
 void insertGlobalVar(string label, var_info info);
@@ -137,13 +143,22 @@ T 			: TK_INT_TYPE TK_MAIN '(' ')' BLOCK {
 				"#include <stdio.h>" << endl <<
 				"int main(void) {" << endl;
 				
+				string a = "";
+				
 				for (string decl : decls) {
 					cout << decl << endl;
+					a = a + decl + "\n";
 				}
 				
 				cout << endl <<
 				$5.transl << 
 				"\treturn 0;\n}" << endl;
+				
+				
+				ofstream code1;
+				code1.open("Testes/teste.c");
+				code1<<"/* Nebulous */\n#include <iostream>\n#include <string.h>\n#include <stdio.h>\nint main(void) {\n" << a << "\n" << $5.transl << "\treturn 0;\n}" << endl;
+				code1.close();
 			};
 			
 PUSH_SCOPE: {
@@ -217,10 +232,7 @@ STATEMENT 	: EXPR ';' {
 			| LOOP_CONTROL_MECHANISMS ';' {
 				$$.transl = $1.transl;
 			}
-			| PRINT ';' {
-				$$.transl = $1.transl;
-			}
-			| READ ';' {
+			| READ_OR_PRINT ';'{
 				$$.transl = $1.transl;
 			}
 			| { $$.transl = ""; }
@@ -413,6 +425,13 @@ LOOP_CONTROL_MECHANISMS : "continue" {
 							}
 						}
 						;
+
+READ_OR_PRINT: PRINT {
+				$$.transl = $1.transl;
+			}
+			 | READ {
+				$$.transl = $1.transl;
+			};
 		
 PRINT		: "print" PRINT_ARGS {
 				$$.transl = "\tstd::cout" + $2.transl + ";\n";
@@ -444,6 +463,9 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 				if (info == nullptr) {
 					if ($1.label == "string") {
 						if ($4.type == $1.transl) {
+							//int index = findValue("\tchar " + $2.transl +  "[10000];");
+							decls.push_back("\tchar " + $2.transl + "[" + to_string($4.label.size()+1) + "]" + ";");
+							//decls.at(index) = "\tchar " + $2.transl + "[" + to_string($4.label.size()+1) + "]" + ";";
 							$$.transl = $4.transl + "\tstrcpy(" + $2.transl + "," + $4.transl + ");\n";;
 						
 							insertVar($2.label, {$1.transl, $4.label});
@@ -488,6 +510,34 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 					$$.transl = "ERROR";
 				}
 			}
+			| TK_ID '['EXPR']' '['EXPR']' '=' EXPR{
+				var_info* info = findVar($1.label);
+				
+				//if () {	
+					if (info != nullptr) {
+						// se tipo da expr for igual a do id
+						if (info->type == $3.type) {
+							if(info->type == "string"){
+								
+								$$.type = $3.type;
+								//decls.at(index) = "\tchar " + info->name + "[" + to_string($3.label.size()+1) + "]" + ";";
+								$$.transl = $3.transl + "\tstrcpy(" + info->name + "," + $3.label + ");\n";
+								$$.label = $3.label;
+							} else {
+								int temp1 = atoi (&$3.transl[6]); 
+								int temp2 = atoi(&$6.transl[6]);
+								int temp3 = info->collumn;
+								int total = temp2 + temp3 * temp1;
+								$$.type = $3.type;
+								$$.transl = $3.transl + "\t" + info->name + "[" + to_string(total) + "] = " + $3.label + ";\n";
+								$$.label = $3.label;
+							}
+						}
+					} else {
+						yyerror("Variável " + $1.label + "não existe");
+					}
+			//	}
+			}
 			| TK_ID '=' EXPR {
 				var_info* info = findVar($1.label);
 				
@@ -495,7 +545,9 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 					// se tipo da expr for igual a do id
 					if (info->type == $3.type) {
 						if(info->type == "string"){
+							
 							$$.type = $3.type;
+							//decls.at(index) = "\tchar " + info->name + "[" + to_string($3.label.size()+1) + "]" + ";";
 							$$.transl = $3.transl + "\tstrcpy(" + info->name + "," + $3.label + ");\n";
 							$$.label = $3.label;
 						} else {
@@ -515,15 +567,11 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 							$$.type = info->type;
 							$$.label = var;
 						} else {
-							// throw compile error
-							$$.type = "ERROR";
-							$$.transl = "ERROR1";
+							yyerror("Conversão implícita de " + info->type + " com " + $3.type + "não permitida");
 						}
 					}
 				} else {
-					// throw compile error
-					$$.type = "ERROR2";
-					$$.transl = "ERROR2";
+					yyerror("Variável " + $1.label + "não existe");
 				}
 			}
 			| INCREMENT {
@@ -592,9 +640,7 @@ DECLARATION : TYPE TK_ID {
 
 					}
 				} else {
-					// throw compile error
-					$$.type = "ERROR";
-					$$.transl = "ERROR";
+					yyerror("Variável "+ $2.label + " já existe");
 				}
 			}
 			| TK_GLOBAL TYPE TK_ID {
@@ -614,10 +660,80 @@ DECLARATION : TYPE TK_ID {
 					$$.type = $2.transl;
 				} else {
 					// throw compile error
-					$$.type = "ERROR";
-					$$.transl = "ERROR";
+					yyerror("Variável "+ $3.label + " já existe");
 				}
 				
+			}
+			| TYPE TK_ID '['EXPR']' '['EXPR']'{
+				var_info* info = findVar($2.label);
+				int line = atoi (&$4.transl[6]);
+				int column = atoi(&$7.transl[6]);
+				
+				if (line != 0 && column != 0) {
+					if (info == nullptr) {
+						string var = getNextVar();
+						
+						
+						insertVar($2.label, {$1.transl, var, column, line});
+						
+						if($1.transl == "string"){
+							decls.push_back("\tchar " + var + "[10000];");
+							
+							$$.transl = "\tstrcpy(" + var + "," + padraoMap[$1.transl] + ");\n";
+							
+							$$.label = var;
+							$$.type = $1.transl;
+						}else {
+							
+							decls.push_back("\t" + $1.transl + " " + var + "[" + to_string(line*column) + "]" + ";");
+							
+							// tá inserindo o tipo \/ ($1.transl): tirar!
+							$$.transl = "\t" + var + "[" + to_string( line*column ) + "];";
+							$$.label = var;
+							$$.type = $1.transl;
+	
+						}
+					} else {
+						yyerror("Variável "+ $2.label + " já existe");
+					}
+				} else {
+					yyerror("Valores da matriz não podem começar com zero");
+				}
+			}
+			| TK_GLOBAL TYPE TK_ID '['EXPR']' '['EXPR']' {
+				var_info* info = findVar($3.label);
+				int line = atoi (&$5.transl[6]);
+				int column = atoi(&$8.transl[6]);
+				
+				if (line != 0 && column != 0){
+					if (info == nullptr) {
+						string var = getNextVar();
+						
+						insertGlobalVar($2.label, {$1.transl, var, column, line});
+						
+						if($1.transl == "string"){
+							decls.push_back("\tchar " + var + "[10000];");
+							
+							$$.transl = "\tstrcpy(" + var + "," + padraoMap[$1.transl] + ");\n";
+							
+							$$.label = var;
+							$$.type = $1.transl;
+						}else {
+							
+							decls.push_back("\t" + $1.transl + " " + var + "[" + to_string( line*column ) + "]" + ";");
+							
+							// tá inserindo o tipo \/ ($1.transl): tirar!
+							$$.transl = "\t" + var + "[" + to_string( line*column ) + "];";
+							$$.label = var;
+							$$.type = $1.transl;
+	
+						}
+					} else {
+						yyerror("Variável "+ $2.label + " já existe");
+					}
+				} else {
+					yyerror("Valores da matriz não podem começar com zero");
+				}
 			};
 			
 INCREMENT	: "icmt" TK_ID {
@@ -1257,7 +1373,6 @@ VALUE		: TK_NUM {
 			| TK_STRING {
 				string var = getNextVar();
 				string value = $1.label;
-				
 				decls.push_back("\tchar " + var +"[10000];");
 				$$.transl = "\tstrcpy(" + var + "," + value + ");\n";
 				$$.label = var;
@@ -1439,6 +1554,16 @@ var_info* findVar(string label) {
 	}
 	
 	return nullptr;
+}
+
+int findValue(string label) {
+	for (int i = 0; i < decls.size(); i++) {
+		if (decls.at(i) == label) {
+			return i;
+		}
+	}
+	
+	return 0;
 }
 
 //Insere variável no contexto atual

@@ -3,67 +3,7 @@ int main() {
     int a;
     int b;
     
-    string g = "aaa";
-    
-    g = "bbb";
-    g = "c";
-    string h = "www";
-    
-    g = g + h;
+    int d[0][4];
 
-    bool c;
-    bool d;
-
-	switch ( i )
-  {
-     case 1 {
-       int i;
-       continue;
-	}
-	case 2 {
-       int j;
-       break;
-	}
-     default { 
-       int z;
-    }
-  }
-  
-  if (c) {
-  } elif (d) {
-  } else {
-    int j;
-  }
-
-    while(c) {
-        
-        while (d) {
-            continue;
-        }
-        continue;
-    }
-    
-    do {
-        continue;
-        do {
-            continue;
-        } while (d);
-    } while (c);
-    
-    for (int j = 0 c i icmt){
-        continue;
-        for (int k = 0 d i icmt) {
-            continue;
-        }
-    }
-    
-    b = a exp 4;
-    
-    if (a < b) {
-        int teste;
-    }
-    
-    int leitura;
-    
-    read c leitura;
+    d[1][2] = 0;
 }

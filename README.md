@@ -10,7 +10,7 @@ Tipo de dados primitivos (int, float, boolean, string e char) - (X)
 Inicialização de Variáveis - (X)
 Concatenação de String- (X) - obs.: necessita uma avaliação mais aprofundada
 Matrizes - ()
-Inicialização de Matrizes - ()
+Inicialização de Matrizes - (X)
 Expressões - (X)
 Expressões Condicionais - (X)
 Comandos de Entrada e Saída
@@ -50,9 +50,6 @@ Passagens de Parâmetros utilizando nomes
 
 Coisas a resolver:
 O string tem q ser adaptável
-Verificação de contexto - duas ou mais variáveis iguais declaradas no mesmo escopo
-
-
 
 OBS: Slides de LP (https://github.com/malbarbo/na-lp-copl)
 Existe um erro a ser corrigido, quando vc fecha um escopo acaba fechando todos
