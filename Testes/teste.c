@@ -9,8 +9,8 @@ int main(void) {
 	int t3;
 
 	t0[4];
-	t1 = 1;
-	t0[7] = t1;
+	t3 = 2;
+	t0[3] = t3;
 
 	return 0;
 }

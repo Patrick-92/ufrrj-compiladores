@@ -500,23 +500,22 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 						
 						insertGlobalVar($3.label, {$2.transl, $5.label});
 					} else {
-						// throw compile error
-						$$.type = "ERROR";
-						$$.transl = "ERROR";
+						yyerror("Variável global recebendo valor do tipo diferente do declarado");
 					}
 				} else {
-					// throw compile error
-					$$.type = "ERROR";
-					$$.transl = "ERROR";
+					yyerror("Variável" + $3.label + "já existe no programa");
 				}
 			}
-			| TK_ID '['EXPR']' '['EXPR']' '=' EXPR{
+			| TK_ID '['VALUE']' '['VALUE']' '=' EXPR{
 				var_info* info = findVar($1.label);
+				int line = atoi(&$3.transl[6]); 
+				int column = atoi(&$6.transl[6]);
+				int columnMatrixDeclared = info->collumn;
 				
-			//	if () {	
+				if (line != 0 && column != 0) {	
 					if (info != nullptr) {
 						// se tipo da expr for igual a do id
-						if (info->type == $3.type) {
+						if (info->type == $9.type) {
 							if(info->type == "string"){
 								
 								$$.type = $3.type;
@@ -524,19 +523,20 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 								$$.transl = $3.transl + "\tstrcpy(" + info->name + "," + $3.label + ");\n";
 								$$.label = $3.label;
 							} else {
-								int temp1 = atoi (&$3.transl[6]); 
-								int temp2 = atoi(&$6.transl[6]);
-								int temp3 = info->collumn;
-								int total = temp2 + temp3 * temp1;
+								int total = column + columnMatrixDeclared * (line - 1);
 								$$.type = $3.type;
-								$$.transl = $3.transl + "\t" + info->name + "[" + to_string(total) + "] = " + $3.label + ";\n";
-								$$.label = $3.label;
+								$$.transl = $9.transl + "\t" + info->name + "[" + to_string(total) + "] = " + $9.label + ";\n";
+								$$.label = $9.label;
 							}
+						}else {
+							yyerror("Tipo da expressão diferente do tipo da matriz");
 						}
 					} else {
 						yyerror("Variável " + $1.label + "não existe");
 					}
-			//	}
+				} else {
+					yyerror("Valor da linha ou coluna da variável não pode ser 0");
+				}
 			}
 			| TK_ID '=' EXPR {
 				var_info* info = findVar($1.label);
