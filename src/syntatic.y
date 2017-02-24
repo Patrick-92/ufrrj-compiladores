@@ -513,7 +513,7 @@ ATTRIBUTION	: TYPE TK_ID '=' EXPR {
 			| TK_ID '['EXPR']' '['EXPR']' '=' EXPR{
 				var_info* info = findVar($1.label);
 				
-				//if () {	
+			//	if () {	
 					if (info != nullptr) {
 						// se tipo da expr for igual a do id
 						if (info->type == $3.type) {
@@ -664,15 +664,14 @@ DECLARATION : TYPE TK_ID {
 				}
 				
 			}
-			| TYPE TK_ID '['EXPR']' '['EXPR']'{
+			| TYPE TK_ID '['TK_NUM']' '['TK_NUM']'{
 				var_info* info = findVar($2.label);
-				int line = atoi (&$4.transl[6]);
-				int column = atoi(&$7.transl[6]);
+				int line = atoi (&$4.label[0]);
+				int column = atoi(&$7.label[0]);
 				
 				if (line != 0 && column != 0) {
 					if (info == nullptr) {
 						string var = getNextVar();
-						
 						
 						insertVar($2.label, {$1.transl, var, column, line});
 						
@@ -700,10 +699,10 @@ DECLARATION : TYPE TK_ID {
 					yyerror("Valores da matriz não podem começar com zero");
 				}
 			}
-			| TK_GLOBAL TYPE TK_ID '['EXPR']' '['EXPR']' {
+			| TK_GLOBAL TYPE TK_ID '['TK_NUM']' '['TK_NUM']' {
 				var_info* info = findVar($3.label);
-				int line = atoi (&$5.transl[6]);
-				int column = atoi(&$8.transl[6]);
+				int line = atoi (&$5.label[0]);
+				int column = atoi(&$8.label[0]);
 				
 				if (line != 0 && column != 0){
 					if (info == nullptr) {

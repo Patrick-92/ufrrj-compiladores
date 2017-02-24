@@ -98,6 +98,7 @@ COMML	    "//".*\n
 "icmt"      { return TK_INCREMENT; }
 "dcmt"      { return TK_DECREMENT; }
 
+
 {INT}		{
     yylval.transl = "";
     yylval.label = yytext;
@@ -147,5 +148,7 @@ COMML	    "//".*\n
 {BREAK}		{}
 
 .			{ *yytext; }
+
+{COMML}     {}
 
 %%
